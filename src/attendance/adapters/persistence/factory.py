@@ -16,6 +16,7 @@ from attendance.adapters.memory import (
     InMemoryAuditLogRepository,
     InMemoryBranchRepository,
     InMemoryDailyAttendanceRepository,
+    InMemoryDepartmentRepository,
     InMemoryDeviceRepository,
     InMemoryEmployeeRepository,
     InMemoryIncidenceRepository,
@@ -30,6 +31,7 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlAuditLogRepository,
     SqlBranchRepository,
     SqlDailyAttendanceRepository,
+    SqlDepartmentRepository,
     SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
@@ -45,7 +47,11 @@ from attendance.ports.attendance import (
 from attendance.ports.audit import AuditLogRepository
 from attendance.ports.device import DeviceRepository, SyncStateRepository
 from attendance.ports.incidence import IncidenceRepository
-from attendance.ports.organization import BranchRepository, EmployeeRepository
+from attendance.ports.organization import (
+    BranchRepository,
+    DepartmentRepository,
+    EmployeeRepository,
+)
 from attendance.ports.schedule import (
     EmployeeScheduleAssignmentRepository,
     RotationPatternRepository,
@@ -61,6 +67,7 @@ class PersistenceBundle:
     daily_attendance_repo: DailyAttendanceRepository
     employee_repo: EmployeeRepository
     branch_repo: BranchRepository
+    department_repo: DepartmentRepository
     incidence_repo: IncidenceRepository
     schedule_assignment_repo: EmployeeScheduleAssignmentRepository
     audit_repo: AuditLogRepository
@@ -107,6 +114,7 @@ class PersistenceFactory:
                 daily_attendance_repo=InMemoryDailyAttendanceRepository(),
                 employee_repo=InMemoryEmployeeRepository(),
                 branch_repo=InMemoryBranchRepository(),
+                department_repo=InMemoryDepartmentRepository(),
                 incidence_repo=InMemoryIncidenceRepository(),
                 schedule_assignment_repo=InMemoryScheduleAssignmentRepository(),
                 audit_repo=InMemoryAuditLogRepository(),
@@ -154,6 +162,7 @@ class PersistenceFactory:
             daily_attendance_repo=SqlDailyAttendanceRepository(session_factory),
             employee_repo=SqlEmployeeRepository(session_factory),
             branch_repo=SqlBranchRepository(session_factory),
+            department_repo=SqlDepartmentRepository(session_factory),
             incidence_repo=SqlIncidenceRepository(session_factory),
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),
@@ -174,6 +183,7 @@ class PersistenceFactory:
             daily_attendance_repo=SqlDailyAttendanceRepository(session_factory),
             employee_repo=SqlEmployeeRepository(session_factory),
             branch_repo=SqlBranchRepository(session_factory),
+            department_repo=SqlDepartmentRepository(session_factory),
             incidence_repo=SqlIncidenceRepository(session_factory),
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),

@@ -11,15 +11,16 @@
 3. [Estructura y Sintaxis General](#-estructura-y-sintaxis-general)
 4. [Opciones Globales](#-opciones-globales)
 5. [CRUD de Sucursales (`asistpy branch`)](#-crud-de-sucursales-asistpy-branch)
-6. [CRUD de Empleados (`asistpy employee`)](#-crud-de-empleados-asistpy-employee)
-7. [CRUD de Turnos de Trabajo (`asistpy shift`)](#-crud-de-turnos-de-trabajo-asistpy-shift)
-8. [CRUD de Asignaciones de Horario (`asistpy schedule`)](#-crud-de-asignaciones-de-horario-asistpy-schedule)
-9. [CRUD y Control de Dispositivos Biométricos (`asistpy device`)](#-crud-y-control-de-dispositivos-biométricos-asistpy-device)
-10. [Control de Asistencia y Jornadas (`asistpy attendance`)](#-control-de-asistencia-y-jornadas-asistpy-attendance)
-11. [Reportes y Exportación (`asistpy report`)](#-reportes-y-exportación-asistpy-report)
-12. [Gestión de Base de Datos (`asistpy db`)](#-gestión-de-base-de-datos-asistpy-db)
-13. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
-14. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
+6. [CRUD de Departamentos (`asistpy department`)](#-crud-de-departamentos-asistpy-department)
+7. [CRUD de Empleados (`asistpy employee`)](#-crud-de-empleados-asistpy-employee)
+8. [CRUD de Turnos de Trabajo (`asistpy shift`)](#-crud-de-turnos-de-trabajo-asistpy-shift)
+9. [CRUD de Asignaciones de Horario (`asistpy schedule`)](#-crud-de-asignaciones-de-horario-asistpy-schedule)
+10. [CRUD y Control de Dispositivos Biométricos (`asistpy device`)](#-crud-y-control-de-dispositivos-biométricos-asistpy-device)
+11. [Control de Asistencia y Jornadas (`asistpy attendance`)](#-control-de-asistencia-y-jornadas-asistpy-attendance)
+12. [Reportes y Exportación (`asistpy report`)](#-reportes-y-exportación-asistpy-report)
+13. [Gestión de Base de Datos (`asistpy db`)](#-gestión-de-base-de-datos-asistpy-db)
+14. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
+15. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
 
 ---
 
@@ -28,7 +29,7 @@
 La CLI `asistpy` actúa como un **Adaptador Primario o Conductor (Driving Adapter)** dentro de la Arquitectura Hexagonal del sistema. Permite ejecutar directamente todos los casos de uso de la aplicación (`application`) contra cualquier motor de persistencia configurado (SQLite, PostgreSQL, MySQL, SQL Server o memoria) sin necesidad de iniciar servidores web ni interfaces gráficas.
 
 Características clave:
-- **CRUD Completo de Catálogos**: Alta, consulta detallada, listado, edición y eliminación de sucursales, empleados, turnos, horarios y dispositivos.
+- **CRUD Completo de Catálogos**: Alta, consulta detallada, listado, edición y eliminación de sucursales, departamentos, empleados, turnos, horarios y dispositivos.
 - **Cero dependencias externas forzadas**: Funciona nativamente sobre la biblioteca estándar de Python (`argparse`), con renderizador interno de tablas Unicode/ASCII y soporte de colores ANSI (respetando `NO_COLOR`).
 - **Soporte nativo de `.env`**: Lee automáticamente las variables de entorno locales o las provistas por parámetro.
 - **Portabilidad**: Ejecutable como comando del sistema (`asistpy`) o como módulo de Python (`python -m attendance.cli` / `python -m attendance.adapters.cli`).
@@ -78,6 +79,7 @@ asistpy [OPCIONES_GLOBALES] <GRUPO> <ACCION> [OPCIONES_ESPECIFICAS]
 
 Los grupos principales disponibles son:
 - `branch`: Catálogo CRUD de sucursales u oficinas físicas.
+- `department`: Catálogo CRUD de departamentos u áreas operativas.
 - `employee`: Catálogo CRUD de empleados y personal.
 - `shift`: Catálogo CRUD de turnos de trabajo y tolerancias.
 - `schedule`: Catálogo CRUD y asignación de horarios a empleados.
@@ -157,6 +159,66 @@ asistpy branch edit --code "MAT-01" --active
 asistpy branch delete --code "MAT-01" --force
 # o por ID:
 asistpy branch delete --branch-id 1 --force
+```
+
+---
+
+## 📂 CRUD de Departamentos (`asistpy department`)
+
+Permite registrar y organizar los departamentos, gerencias o áreas funcionales de la empresa.
+
+### 1. `asistpy department add` (Crear)
+```bash
+# Registrar un departamento general (aplica a toda la empresa)
+asistpy department add --name "Recursos Humanos" --code "RH-01"
+
+# Registrar un departamento vinculado a una sucursal específica
+asistpy department add --name "Mantenimiento Planta" --code "MNT-01" --branch-id 1
+
+# Registrar departamento directamente inactivo
+asistpy department add --name "Área Temporal" --code "TMP-01" --inactive
+```
+
+### 2. `asistpy department show` (Ver Detalle)
+```bash
+# Consultar por código
+asistpy department show --code "RH-01"
+
+# Consultar por ID
+asistpy department show --department-id 1
+```
+
+### 3. `asistpy department list` (Listar)
+```bash
+# Listar todos los departamentos
+asistpy department list
+
+# Filtrar por sucursal
+asistpy department list --branch-id 1
+
+# Filtrar solo activos
+asistpy department list --active-only
+```
+
+### 4. `asistpy department edit` (Modificar)
+```bash
+# Modificar nombre y código
+asistpy department edit --code "RH-01" --name "Capital Humano" --new-code "CH-01"
+
+# Desactivar departamento
+asistpy department edit --code "CH-01" --inactive
+
+# Reactivar departamento
+asistpy department edit --code "CH-01" --active
+```
+
+### 5. `asistpy department delete` (Eliminar)
+```bash
+# Eliminar por código
+asistpy department delete --code "CH-01" --force
+
+# Eliminar por ID
+asistpy department delete --department-id 1 --force
 ```
 
 ---

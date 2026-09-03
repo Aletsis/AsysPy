@@ -4,6 +4,7 @@ from .in_memory_attendance_repo import InMemoryAttendanceRepository
 from .in_memory_audit_repo import InMemoryAuditLogRepository
 from .in_memory_branch_repo import InMemoryBranchRepository
 from .in_memory_daily_attendance_repo import InMemoryDailyAttendanceRepository
+from .in_memory_department_repo import InMemoryDepartmentRepository
 from .in_memory_device_repo import InMemoryDeviceRepository
 from .in_memory_employee_repo import InMemoryEmployeeRepository
 from .in_memory_incidence_repo import InMemoryIncidenceRepository
@@ -21,6 +22,7 @@ __all__ = [
     "InMemoryAuditLogRepository",
     "InMemoryBranchRepository",
     "InMemoryDailyAttendanceRepository",
+    "InMemoryDepartmentRepository",
     "InMemoryDeviceRepository",
     "InMemoryEmployeeRepository",
     "InMemoryIncidenceRepository",

@@ -55,6 +55,7 @@ def cmd_db_status(args: argparse.Namespace, ctx: CLIContext) -> int:
 
         # Obtener conteos básicos de entidades
         branches_count = len(bundle.branch_repo.list_all()) if hasattr(bundle.branch_repo, "list_all") else 0
+        departments_count = len(bundle.department_repo.list_all()) if hasattr(bundle.department_repo, "list_all") else 0
         devices_count = len(bundle.device_repo.list_all())
         employees_count = len(bundle.employee_repo.list_all()) if hasattr(bundle.employee_repo, "list_all") else 0
         shifts_count = len(bundle.shift_repo.list_all()) if hasattr(bundle.shift_repo, "list_all") else 0
@@ -66,6 +67,7 @@ def cmd_db_status(args: argparse.Namespace, ctx: CLIContext) -> int:
             ["URL de Conexión", db_url],
             ["Estado de Conexión", green("Conectado (OK)")],
             ["Sucursales Registradas", str(branches_count)],
+            ["Departamentos Registrados", str(departments_count)],
             ["Dispositivos en Catálogo", str(devices_count)],
             ["Empleados Registrados", str(employees_count)],
             ["Turnos en Catálogo", str(shifts_count)],

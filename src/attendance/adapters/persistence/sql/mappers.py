@@ -11,6 +11,7 @@ from attendance.adapters.persistence.sql.models import (
     AuditLogModel,
     BranchModel,
     DailyAttendanceModel,
+    DepartmentModel,
     DeviceModel,
     EmployeeModel,
     JustificationModel,
@@ -30,6 +31,7 @@ from attendance.domain.incidence.enums import JustificationStatus, Justification
 from attendance.domain.incidence.justification import Justification
 from attendance.domain.organization.address import Address
 from attendance.domain.organization.branch import Branch
+from attendance.domain.organization.department import Department
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
 from attendance.domain.schedule.enums import (
@@ -581,5 +583,31 @@ def branch_to_model(entity: Branch) -> BranchModel:
         timezone=entity.timezone,
         active=entity.active,
     )
+
+
+# ============================================================================
+# Department Mappers
+# ============================================================================
+def department_to_domain(model: DepartmentModel) -> Department:
+    """Convierte un DepartmentModel a la entidad Department del dominio."""
+    return Department(
+        id=model.id,
+        name=model.name,
+        code=model.code,
+        branch_id=model.branch_id,
+        active=model.active,
+    )
+
+
+def department_to_model(entity: Department) -> DepartmentModel:
+    """Convierte una entidad Department a DepartmentModel."""
+    return DepartmentModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        code=entity.code,
+        branch_id=entity.branch_id,
+        active=entity.active,
+    )
+
 
 
