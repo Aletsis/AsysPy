@@ -29,7 +29,14 @@ def cmd_shift_add(args: argparse.Namespace, ctx: CLIContext) -> int:
 
     start = _parse_time(args.start_time)
     end = _parse_time(args.end_time)
-    category = ShiftCategory(args.category.lower()) if args.category else ShiftCategory.PERSONALIZADO
+    try:
+        category = ShiftCategory(args.category.lower()) if args.category else ShiftCategory.PERSONALIZADO
+    except ValueError:
+        print(
+            f"{red('✘ Error:')} Categoría '{args.category}' no es válida. Opciones: {', '.join(c.value for c in ShiftCategory)}.",
+            file=sys.stderr,
+        )
+        return 1
 
     shift = ShiftDefinition(
         id=None,
@@ -129,7 +136,14 @@ def cmd_shift_edit(args: argparse.Namespace, ctx: CLIContext) -> int:
     if args.tolerance is not None:
         shift.tolerance_minutes = args.tolerance
     if args.category is not None:
-        shift.category = ShiftCategory(args.category.lower())
+        try:
+            shift.category = ShiftCategory(args.category.lower())
+        except ValueError:
+            print(
+                f"{red('✘ Error:')} Categoría '{args.category}' no es válida. Opciones: {', '.join(c.value for c in ShiftCategory)}.",
+                file=sys.stderr,
+            )
+            return 1
     if args.crosses_midnight:
         shift.crosses_midnight = True
     elif args.no_crosses_midnight:
@@ -179,9 +193,9 @@ def register_shift_subparser(subparsers: argparse._SubParsersAction) -> None:
     add_parser.add_argument("--crosses-midnight", action="store_true", help="El turno cruza medianoche (ej. nocturno 22 a 06)")
     add_parser.add_argument(
         "--category",
-        choices=["regular", "nocturno", "partido", "personalizado"],
+        choices=[c.value for c in ShiftCategory],
         default="personalizado",
-        help="Categoría del turno",
+        help=f"Categoría del turno ({', '.join(c.value for c in ShiftCategory)})",
     )
     add_parser.set_defaults(func=cmd_shift_add)
 
@@ -205,7 +219,11 @@ def register_shift_subparser(subparsers: argparse._SubParsersAction) -> None:
     edit_parser.add_argument("--start-time", help="Nueva hora de entrada HH:MM")
     edit_parser.add_argument("--end-time", help="Nueva hora de salida HH:MM")
     edit_parser.add_argument("--tolerance", type=int, help="Nuevos minutos de tolerancia")
-    edit_parser.add_argument("--category", choices=["regular", "nocturno", "partido", "personalizado"], help="Nueva categoría")
+    edit_parser.add_argument(
+        "--category",
+        choices=[c.value for c in ShiftCategory],
+        help=f"Nueva categoría ({', '.join(c.value for c in ShiftCategory)})",
+    )
     midnight_group = edit_parser.add_mutually_exclusive_group()
     midnight_group.add_argument("--crosses-midnight", action="store_true", help="Marcar que cruza medianoche")
     midnight_group.add_argument("--no-crosses-midnight", action="store_true", help="Marcar que no cruza medianoche")

@@ -171,6 +171,58 @@ def test_cli_shift_crud(capsys) -> None:
         assert code == 1
 
 
+def test_cli_shift_categories_all(capsys) -> None:
+    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
+        # Test regular (from CLI manual)
+        code = main([
+            "shift", "add",
+            "--name", "Matutino 8-16",
+            "--start-time", "08:00",
+            "--end-time", "16:00",
+            "--tolerance", "15",
+            "--category", "regular",
+        ])
+        assert code == 0
+        out = capsys.readouterr().out
+        assert "Matutino 8-16" in out
+        assert "regular" in out
+
+        # Test partido
+        code = main([
+            "shift", "add",
+            "--name", "Turno Partido",
+            "--start-time", "09:00",
+            "--end-time", "18:00",
+            "--category", "partido",
+        ])
+        assert code == 0
+        out = capsys.readouterr().out
+        assert "Turno Partido" in out
+        assert "partido" in out
+
+        # Test matutino
+        code = main([
+            "shift", "add",
+            "--name", "Turno Matutino Puro",
+            "--start-time", "06:00",
+            "--end-time", "14:00",
+            "--category", "matutino",
+        ])
+        assert code == 0
+        out = capsys.readouterr().out
+        assert "matutino" in out
+
+        # Test edit category
+        code = main(["shift", "edit", "--shift-id", "1", "--category", "vespertino"])
+        assert code == 0
+        capsys.readouterr()
+
+        main(["shift", "show", "--shift-id", "1"])
+        show_out = capsys.readouterr().out
+        assert "vespertino" in show_out
+
+
 def test_cli_schedule_crud(capsys) -> None:
     bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):

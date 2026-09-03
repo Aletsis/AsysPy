@@ -8,6 +8,8 @@ class ShiftCategory(str, Enum):
     VESPERTINO = "vespertino"
     NOCTURNO = "nocturno"
     MIXTO = "mixto"
+    REGULAR = "regular"
+    PARTIDO = "partido"
     PERSONALIZADO = "personalizado"
 
 

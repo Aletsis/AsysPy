@@ -199,7 +199,11 @@ def shift_from_dict(data: dict[str, Any] | None) -> ShiftDefinition | None:
     return ShiftDefinition(
         id=data["id"],
         name=data["name"],
-        category=ShiftCategory(data.get("category", ShiftCategory.PERSONALIZADO.value)),
+        category=(
+            ShiftCategory(data["category"])
+            if data.get("category") in [c.value for c in ShiftCategory]
+            else ShiftCategory.PERSONALIZADO
+        ),
         start_time=time.fromisoformat(data["start_time"]) if data.get("start_time") else None,
         end_time=time.fromisoformat(data["end_time"]) if data.get("end_time") else None,
         tolerance_minutes=data.get("tolerance_minutes", 0),
