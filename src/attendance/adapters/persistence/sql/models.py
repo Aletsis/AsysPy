@@ -194,3 +194,31 @@ class DeviceModel(Base):
     capabilities: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
+
+class ShiftModel(Base):
+    """Tabla de catálogo de turnos laborales (regulares, nocturnos, partidos, etc.)."""
+
+    __tablename__ = "shifts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str] = mapped_column(String(50), default="personalizado", nullable=False)
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    tolerance_minutes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    crosses_midnight: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    segments: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+
+
+class RotationPatternModel(Base):
+    """Tabla de patrones de rotación cíclica de turnos (6x1, 24x48, etc.)."""
+
+    __tablename__ = "rotation_patterns"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    shift_sequence: Mapped[list[int | None]] = mapped_column(JSON, nullable=False)
+    frequency: Mapped[str] = mapped_column(String(30), nullable=False)
+    anchor_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+

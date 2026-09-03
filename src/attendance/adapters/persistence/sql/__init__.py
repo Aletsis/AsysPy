@@ -7,14 +7,21 @@ from attendance.adapters.persistence.sql.database import (
     drop_db,
     init_db,
 )
-from attendance.adapters.persistence.sql.models import Base
+from attendance.adapters.persistence.sql.models import (
+    Base,
+    RotationPatternModel,
+    ShiftModel,
+)
 from attendance.adapters.persistence.sql.repositories import (
     SqlAttendanceRepository,
     SqlAuditLogRepository,
     SqlDailyAttendanceRepository,
+    SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
+    SqlRotationPatternRepository,
     SqlScheduleAssignmentRepository,
+    SqlShiftRepository,
     SqlSyncStateRepository,
 )
 
@@ -25,11 +32,16 @@ __all__ = [
     "create_session_factory",
     "init_db",
     "drop_db",
+    "RotationPatternModel",
+    "ShiftModel",
     "SqlAttendanceRepository",
     "SqlAuditLogRepository",
     "SqlDailyAttendanceRepository",
+    "SqlDeviceRepository",
     "SqlEmployeeRepository",
     "SqlIncidenceRepository",
+    "SqlRotationPatternRepository",
     "SqlScheduleAssignmentRepository",
+    "SqlShiftRepository",
     "SqlSyncStateRepository",
 ]

@@ -18,7 +18,9 @@ from attendance.adapters.memory import (
     InMemoryDeviceRepository,
     InMemoryEmployeeRepository,
     InMemoryIncidenceRepository,
+    InMemoryRotationPatternRepository,
     InMemoryScheduleAssignmentRepository,
+    InMemoryShiftRepository,
     InMemorySyncStateRepository,
 )
 from attendance.adapters.persistence.sql.database import Database
@@ -29,7 +31,9 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
+    SqlRotationPatternRepository,
     SqlScheduleAssignmentRepository,
+    SqlShiftRepository,
     SqlSyncStateRepository,
 )
 from attendance.ports.attendance import (
@@ -40,7 +44,11 @@ from attendance.ports.audit import AuditLogRepository
 from attendance.ports.device import DeviceRepository, SyncStateRepository
 from attendance.ports.incidence import IncidenceRepository
 from attendance.ports.organization import EmployeeRepository
-from attendance.ports.schedule import EmployeeScheduleAssignmentRepository
+from attendance.ports.schedule import (
+    EmployeeScheduleAssignmentRepository,
+    RotationPatternRepository,
+    ShiftRepository,
+)
 
 
 @dataclass
@@ -55,7 +63,10 @@ class PersistenceBundle:
     audit_repo: AuditLogRepository
     sync_state_repo: SyncStateRepository
     device_repo: DeviceRepository
+    shift_repo: ShiftRepository | None = None
+    rotation_pattern_repo: RotationPatternRepository | None = None
     database: Database | None = None
+
 
 
 
@@ -97,6 +108,8 @@ class PersistenceFactory:
                 audit_repo=InMemoryAuditLogRepository(),
                 sync_state_repo=InMemorySyncStateRepository(),
                 device_repo=InMemoryDeviceRepository(),
+                shift_repo=InMemoryShiftRepository(),
+                rotation_pattern_repo=InMemoryRotationPatternRepository(),
                 database=None,
             )
 
@@ -141,6 +154,8 @@ class PersistenceFactory:
             audit_repo=SqlAuditLogRepository(session_factory),
             sync_state_repo=SqlSyncStateRepository(session_factory),
             device_repo=SqlDeviceRepository(session_factory),
+            shift_repo=SqlShiftRepository(session_factory),
+            rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
             database=db,
         )
 
@@ -158,6 +173,9 @@ class PersistenceFactory:
             audit_repo=SqlAuditLogRepository(session_factory),
             sync_state_repo=SqlSyncStateRepository(session_factory),
             device_repo=SqlDeviceRepository(session_factory),
+            shift_repo=SqlShiftRepository(session_factory),
+            rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
             database=None,
         )
+
 

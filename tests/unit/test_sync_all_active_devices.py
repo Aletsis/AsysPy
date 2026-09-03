@@ -17,8 +17,10 @@ from attendance.domain.device import AttendanceLog, AuthMethod, Device, LogStatu
 
 
 class FakeDeviceReader:
-    def __init__(self, logs_by_device_id: dict[int, list[AttendanceLog]] | None = None) -> None:
-        self.logs_by_device_id = logs_by_device_id or {}
+    def __init__(
+        self, logs_by_device_id: dict[int, list[AttendanceLog] | None] | None = None
+    ) -> None:
+        self.logs_by_device_id: dict[int, list[AttendanceLog] | None] = logs_by_device_id or {}
         self.connected_devices: list[int] = []
         self.disconnected = False
 
@@ -32,7 +34,8 @@ class FakeDeviceReader:
         self.disconnected = True
 
     def get_raw_logs(self, device: Device) -> list[AttendanceLog]:
-        return self.logs_by_device_id.get(device.id or 0, [])
+        logs = self.logs_by_device_id.get(device.id or 0, [])
+        return logs or []
 
     def get_device_info(self, device: Device) -> dict:
         return {}
@@ -200,7 +203,8 @@ def test_sync_all_active_devices_with_reader_factory() -> None:
 
     def factory(device: Device) -> FakeDeviceReader:
         created_readers.append(device)
-        return FakeDeviceReader({device.id: [make_log(1, device.id or 0)]})
+        dev_id = device.id if device.id is not None else 0
+        return FakeDeviceReader({dev_id: [make_log(1, dev_id)]})
 
     result = sync_all_active_devices(
         device_registry=device_repo,

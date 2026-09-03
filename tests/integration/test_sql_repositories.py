@@ -14,7 +14,9 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
+    SqlRotationPatternRepository,
     SqlScheduleAssignmentRepository,
+    SqlShiftRepository,
     SqlSyncStateRepository,
 )
 from attendance.domain.attendance.daily_attendance import DailyAttendance
@@ -28,7 +30,13 @@ from attendance.domain.incidence.enums import JustificationStatus, Justification
 from attendance.domain.incidence.justification import Justification
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
-from attendance.domain.schedule.enums import AssignmentMode, ShiftCategory, Weekday
+from attendance.domain.schedule.enums import (
+    AssignmentMode,
+    RotationFrequency,
+    ShiftCategory,
+    Weekday,
+)
+from attendance.domain.schedule.rotation import RotationPattern
 from attendance.domain.schedule.shift import ShiftDefinition, ShiftSegment
 
 
@@ -375,4 +383,150 @@ def test_sql_device_repository(session_factory: sessionmaker[Session]) -> None:
     assert updated.name == "Reloj Entrada Modificado"
     assert updated.active is False
     assert len(repo.get_active_devices()) == 0
+
+
+# ============================================================================
+# Test SqlShiftRepository
+# ============================================================================
+def test_sql_shift_repository(session_factory: sessionmaker[Session]) -> None:
+    repo = SqlShiftRepository(session_factory)
+
+    # 1. Guardar turno continuo (Matutino 08:00 - 16:00)
+    morning_shift = ShiftDefinition(
+        id=None,
+        name="Turno Matutino",
+        category=ShiftCategory.MATUTINO,
+        start_time=time(8, 0),
+        end_time=time(16, 0),
+        tolerance_minutes=15,
+    )
+    saved_morning = repo.save(morning_shift)
+    assert saved_morning.id is not None
+    morning_id = saved_morning.id
+
+    # 2. Consultar por ID
+    fetched_morning = repo.get_by_id(morning_id)
+    assert fetched_morning is not None
+    assert fetched_morning.name == "Turno Matutino"
+    assert fetched_morning.category == ShiftCategory.MATUTINO
+    assert fetched_morning.start_time == time(8, 0)
+    assert fetched_morning.end_time == time(16, 0)
+    assert fetched_morning.tolerance_minutes == 15
+    assert not fetched_morning.crosses_midnight
+    assert not fetched_morning.is_split
+    assert len(fetched_morning.segments) == 1
+
+    # 3. Guardar turno partido (Comercio 09:00-14:00 y 16:00-19:00)
+    split_shift = ShiftDefinition(
+        id=None,
+        name="Comercio Partido",
+        category=ShiftCategory.MIXTO,
+        segments=[
+            ShiftSegment(start_time=time(9, 0), end_time=time(14, 0), tolerance_minutes=10, name="Mañana"),
+            ShiftSegment(start_time=time(16, 0), end_time=time(19, 0), tolerance_minutes=5, name="Tarde"),
+        ],
+    )
+    saved_split = repo.save(split_shift)
+    assert saved_split.id is not None
+    split_id = saved_split.id
+
+    fetched_split = repo.get_by_id(split_id)
+    assert fetched_split is not None
+    assert fetched_split.is_split
+    assert len(fetched_split.segments) == 2
+    assert fetched_split.expected_work_minutes == 480
+
+    # 4. Guardar turno nocturno / 24 Horas que cruza medianoche (24x48)
+    night_24_shift = ShiftDefinition(
+        id=None,
+        name="Turno 24 Horas",
+        category=ShiftCategory.NOCTURNO,
+        start_time=time(8, 0),
+        end_time=time(7, 59),
+        crosses_midnight=True,
+        tolerance_minutes=15,
+    )
+    saved_24 = repo.save(night_24_shift)
+    assert saved_24.id is not None
+    assert saved_24.crosses_midnight
+
+    # 5. Listar todos
+    all_shifts = repo.list_all()
+    assert len(all_shifts) == 3
+
+    # 6. Actualizar turno
+    fetched_morning.name = "Matutino Modificado"
+    fetched_morning.tolerance_minutes = 20
+    repo.save(fetched_morning)
+
+    updated_morning = repo.get_by_id(morning_id)
+    assert updated_morning is not None
+    assert updated_morning.name == "Matutino Modificado"
+    assert updated_morning.tolerance_minutes == 20
+
+    # 7. Eliminar turno
+    assert repo.delete(split_id) is True
+    assert repo.get_by_id(split_id) is None
+    assert len(repo.list_all()) == 2
+    assert repo.delete(9999) is False
+
+
+# ============================================================================
+# Test SqlRotationPatternRepository
+# ============================================================================
+def test_sql_rotation_pattern_repository(session_factory: sessionmaker[Session]) -> None:
+    repo = SqlRotationPatternRepository(session_factory)
+
+    # 1. Guardar patrón 6x1
+    pattern_6x1 = RotationPattern(
+        id=None,
+        name="Patrón 6x1",
+        shift_sequence=[1, 1, 1, 1, 1, 1, None],
+        frequency=RotationFrequency.DAILY,
+        anchor_date=date(2026, 1, 1),
+    )
+    saved_6x1 = repo.save(pattern_6x1)
+    assert saved_6x1.id is not None
+    p_id = saved_6x1.id
+
+    # 2. Consultar por ID
+    fetched_6x1 = repo.get_by_id(p_id)
+    assert fetched_6x1 is not None
+    assert fetched_6x1.name == "Patrón 6x1"
+    assert fetched_6x1.frequency == RotationFrequency.DAILY
+    assert fetched_6x1.anchor_date == date(2026, 1, 1)
+    assert fetched_6x1.shift_sequence == [1, 1, 1, 1, 1, 1, None]
+    assert fetched_6x1.resolve_shift_id(date(2026, 1, 1)) == 1
+    assert fetched_6x1.resolve_shift_id(date(2026, 1, 7)) is None
+
+    # 3. Guardar patrón 24x48 (1 día de turno 24h y 2 días de descanso)
+    pattern_24x48 = RotationPattern(
+        id=None,
+        name="Patrón 24x48",
+        shift_sequence=[2, None, None],
+        frequency=RotationFrequency.DAILY,
+        anchor_date=date(2026, 1, 1),
+    )
+    saved_24x48 = repo.save(pattern_24x48)
+    assert saved_24x48.id is not None
+    p24_id = saved_24x48.id
+
+    # 4. Listar todos
+    all_patterns = repo.list_all()
+    assert len(all_patterns) == 2
+
+    # 5. Actualizar patrón
+    fetched_6x1.name = "6x1 Modificado"
+    repo.save(fetched_6x1)
+
+    updated_6x1 = repo.get_by_id(p_id)
+    assert updated_6x1 is not None
+    assert updated_6x1.name == "6x1 Modificado"
+
+    # 6. Eliminar patrón
+    assert repo.delete(p24_id) is True
+    assert repo.get_by_id(p24_id) is None
+    assert len(repo.list_all()) == 1
+    assert repo.delete(9999) is False
+
 

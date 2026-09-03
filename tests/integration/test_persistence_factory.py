@@ -7,11 +7,15 @@ import pytest
 from attendance.adapters.memory import (
     InMemoryAttendanceRepository,
     InMemoryDeviceRepository,
+    InMemoryRotationPatternRepository,
+    InMemoryShiftRepository,
 )
 from attendance.adapters.persistence.factory import PersistenceFactory
 from attendance.adapters.persistence.sql.repositories import (
     SqlAttendanceRepository,
     SqlDeviceRepository,
+    SqlRotationPatternRepository,
+    SqlShiftRepository,
 )
 from attendance.application.attendance.process_daily_attendance import ProcessDailyAttendance
 from attendance.application.device import sync_all_active_devices
@@ -28,6 +32,8 @@ def test_factory_creates_memory_bundle() -> None:
     bundle = PersistenceFactory.create_bundle("memory")
     assert isinstance(bundle.attendance_repo, InMemoryAttendanceRepository)
     assert isinstance(bundle.device_repo, InMemoryDeviceRepository)
+    assert isinstance(bundle.shift_repo, InMemoryShiftRepository)
+    assert isinstance(bundle.rotation_pattern_repo, InMemoryRotationPatternRepository)
     assert bundle.database is None
 
 
@@ -37,7 +43,10 @@ def test_factory_creates_sqlite_bundle() -> None:
     )
     assert isinstance(bundle.attendance_repo, SqlAttendanceRepository)
     assert isinstance(bundle.device_repo, SqlDeviceRepository)
+    assert isinstance(bundle.shift_repo, SqlShiftRepository)
+    assert isinstance(bundle.rotation_pattern_repo, SqlRotationPatternRepository)
     assert bundle.database is not None
+
 
 
 
@@ -72,9 +81,9 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
     )
     bundle.employee_repo.save(emp)
 
-    # 2. Asignar turno
+    # 2. Guardar turno en catálogo SQL y asignar al empleado
     shift = ShiftDefinition(
-        id=1,
+        id=None,
         name="Turno 9 a 18",
         category=ShiftCategory.MATUTINO,
         start_time=time(9, 0),
@@ -82,12 +91,15 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
         tolerance_minutes=15,
         segments=[ShiftSegment(start_time=time(9, 0), end_time=time(18, 0), tolerance_minutes=15)],
     )
+    saved_shift = bundle.shift_repo.save(shift)
+    assert saved_shift.id is not None
+
     assignment = EmployeeScheduleAssignment(
         id=None,
         employee_pin="EMP007",
         mode=AssignmentMode.FIXED,
         valid_from=date(2026, 1, 1),
-        shift_definition_id=1,
+        shift_definition_id=saved_shift.id,
         working_weekdays={Weekday.MONDAY, Weekday.TUESDAY, Weekday.WEDNESDAY, Weekday.THURSDAY, Weekday.FRIDAY},
     )
     bundle.schedule_assignment_repo.save(assignment)
@@ -122,8 +134,8 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
         attendance_repo=bundle.attendance_repo,
         daily_attendance_repo=bundle.daily_attendance_repo,
         schedule_assignment_repo=bundle.schedule_assignment_repo,
-        shift_definitions={1: shift},
-        rotation_patterns={},
+        shift_repo=bundle.shift_repo,
+        rotation_pattern_repo=bundle.rotation_pattern_repo,
         incidence_repo=bundle.incidence_repo,
     )
 

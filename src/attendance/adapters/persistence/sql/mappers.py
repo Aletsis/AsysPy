@@ -3,7 +3,7 @@
 Garantiza que el Dominio permanezca completamente desacoplado de la base de datos.
 """
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 from typing import Any
 
 from attendance.adapters.persistence.sql.models import (
@@ -13,7 +13,9 @@ from attendance.adapters.persistence.sql.models import (
     DeviceModel,
     EmployeeModel,
     JustificationModel,
+    RotationPatternModel,
     ScheduleAssignmentModel,
+    ShiftModel,
     WorkSessionModel,
 )
 from attendance.domain.attendance.daily_attendance import DailyAttendance
@@ -27,7 +29,8 @@ from attendance.domain.incidence.enums import JustificationStatus, Justification
 from attendance.domain.incidence.justification import Justification
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
-from attendance.domain.schedule.enums import AssignmentMode, ShiftCategory, Weekday
+from attendance.domain.schedule.enums import AssignmentMode, RotationFrequency, ShiftCategory, Weekday
+from attendance.domain.schedule.rotation import RotationPattern
 from attendance.domain.schedule.shift import ShiftDefinition, ShiftSegment
 
 
@@ -192,6 +195,88 @@ def shift_from_dict(data: dict[str, Any] | None) -> ShiftDefinition | None:
         tolerance_minutes=data.get("tolerance_minutes", 0),
         crosses_midnight=data.get("crosses_midnight", False),
         segments=segments,
+    )
+
+
+def shift_to_model(entity: ShiftDefinition) -> ShiftModel:
+    """Convierte una entidad ShiftDefinition a ShiftModel."""
+    segments_data = (
+        [
+            {
+                "start_time": s.start_time.isoformat(),
+                "end_time": s.end_time.isoformat(),
+                "crosses_midnight": s.crosses_midnight,
+                "tolerance_minutes": s.tolerance_minutes,
+                "name": s.name,
+            }
+            for s in entity.segments
+        ]
+        if entity.segments
+        else None
+    )
+    return ShiftModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        category=entity.category.value if isinstance(entity.category, ShiftCategory) else str(entity.category),
+        start_time=entity.start_time,
+        end_time=entity.end_time,
+        tolerance_minutes=entity.tolerance_minutes,
+        crosses_midnight=entity.crosses_midnight,
+        segments=segments_data,
+    )
+
+
+def shift_to_domain(model: ShiftModel) -> ShiftDefinition:
+    """Convierte un ShiftModel a ShiftDefinition del dominio."""
+    segments = [
+        ShiftSegment(
+            start_time=time.fromisoformat(s["start_time"]) if isinstance(s["start_time"], str) else s["start_time"],
+            end_time=time.fromisoformat(s["end_time"]) if isinstance(s["end_time"], str) else s["end_time"],
+            crosses_midnight=s.get("crosses_midnight", False),
+            tolerance_minutes=s.get("tolerance_minutes", 0),
+            name=s.get("name", "Segmento"),
+        )
+        for s in (model.segments or [])
+    ]
+    category_val = (
+        ShiftCategory(model.category)
+        if model.category in [c.value for c in ShiftCategory]
+        else ShiftCategory.PERSONALIZADO
+    )
+    return ShiftDefinition(
+        id=model.id,
+        name=model.name,
+        category=category_val,
+        start_time=model.start_time,
+        end_time=model.end_time,
+        tolerance_minutes=model.tolerance_minutes,
+        crosses_midnight=model.crosses_midnight,
+        segments=segments,
+    )
+
+
+# ============================================================================
+# RotationPattern Mappers
+# ============================================================================
+def rotation_pattern_to_model(entity: RotationPattern) -> RotationPatternModel:
+    """Convierte una entidad RotationPattern a RotationPatternModel."""
+    return RotationPatternModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        shift_sequence=list(entity.shift_sequence),
+        frequency=entity.frequency.value if isinstance(entity.frequency, RotationFrequency) else str(entity.frequency),
+        anchor_date=entity.anchor_date,
+    )
+
+
+def rotation_pattern_to_domain(model: RotationPatternModel) -> RotationPattern:
+    """Convierte un RotationPatternModel a RotationPattern del dominio."""
+    return RotationPattern(
+        id=model.id,
+        name=model.name,
+        shift_sequence=list(model.shift_sequence or []),
+        frequency=RotationFrequency(model.frequency),
+        anchor_date=model.anchor_date,
     )
 
 
