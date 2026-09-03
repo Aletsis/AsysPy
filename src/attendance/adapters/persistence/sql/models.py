@@ -222,3 +222,17 @@ class RotationPatternModel(Base):
     anchor_date: Mapped[date] = mapped_column(Date, nullable=False)
 
 
+class BranchModel(Base):
+    """Tabla del catálogo de sucursales u oficinas físicas."""
+
+    __tablename__ = "branches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, index=True)
+    timezone: Mapped[str] = mapped_column(String(50), default="America/Mexico_City", nullable=False)
+    address: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+
+

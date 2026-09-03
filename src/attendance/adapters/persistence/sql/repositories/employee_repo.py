@@ -79,3 +79,13 @@ class SqlEmployeeRepository(EmployeeRepository):
             stmt = stmt.order_by(EmployeeModel.paternal_last_name.asc(), EmployeeModel.first_name.asc())
             models = session.scalars(stmt).all()
             return [employee_to_domain(m) for m in models]
+
+    def delete(self, pin: str) -> bool:
+        with self.session_factory() as session:
+            stmt = select(EmployeeModel).where(EmployeeModel.pin == pin)
+            model = session.scalars(stmt).first()
+            if model:
+                session.delete(model)
+                session.commit()
+                return True
+            return False

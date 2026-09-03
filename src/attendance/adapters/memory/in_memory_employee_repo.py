@@ -47,3 +47,11 @@ class InMemoryEmployeeRepository(EmployeeRepository):
         if branch_id is not None:
             emps = [emp for emp in emps if emp.home_branch_id == branch_id]
         return emps
+
+    def delete(self, pin: str) -> bool:
+        if pin in self._by_pin:
+            emp = self._by_pin.pop(pin)
+            if emp.id is not None and emp.id in self._by_id:
+                del self._by_id[emp.id]
+            return True
+        return False

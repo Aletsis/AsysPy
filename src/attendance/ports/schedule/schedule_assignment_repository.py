@@ -16,3 +16,13 @@ class EmployeeScheduleAssignmentRepository(Protocol):
     def save(
         self, assignment: EmployeeScheduleAssignment
     ) -> EmployeeScheduleAssignment: ...
+
+    def get_by_id(
+        self, assignment_id: int
+    ) -> EmployeeScheduleAssignment | None: ...
+
+    def list_all(
+        self, employee_pin: str | None = None
+    ) -> list[EmployeeScheduleAssignment]: ...
+
+    def delete(self, assignment_id: int) -> bool: ...

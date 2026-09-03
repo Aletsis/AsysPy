@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from attendance.adapters.memory import (
     InMemoryAttendanceRepository,
     InMemoryAuditLogRepository,
+    InMemoryBranchRepository,
     InMemoryDailyAttendanceRepository,
     InMemoryDeviceRepository,
     InMemoryEmployeeRepository,
@@ -27,6 +28,7 @@ from attendance.adapters.persistence.sql.database import Database
 from attendance.adapters.persistence.sql.repositories import (
     SqlAttendanceRepository,
     SqlAuditLogRepository,
+    SqlBranchRepository,
     SqlDailyAttendanceRepository,
     SqlDeviceRepository,
     SqlEmployeeRepository,
@@ -43,7 +45,7 @@ from attendance.ports.attendance import (
 from attendance.ports.audit import AuditLogRepository
 from attendance.ports.device import DeviceRepository, SyncStateRepository
 from attendance.ports.incidence import IncidenceRepository
-from attendance.ports.organization import EmployeeRepository
+from attendance.ports.organization import BranchRepository, EmployeeRepository
 from attendance.ports.schedule import (
     EmployeeScheduleAssignmentRepository,
     RotationPatternRepository,
@@ -58,6 +60,7 @@ class PersistenceBundle:
     attendance_repo: AttendanceRepository
     daily_attendance_repo: DailyAttendanceRepository
     employee_repo: EmployeeRepository
+    branch_repo: BranchRepository
     incidence_repo: IncidenceRepository
     schedule_assignment_repo: EmployeeScheduleAssignmentRepository
     audit_repo: AuditLogRepository
@@ -103,6 +106,7 @@ class PersistenceFactory:
                 attendance_repo=InMemoryAttendanceRepository(),
                 daily_attendance_repo=InMemoryDailyAttendanceRepository(),
                 employee_repo=InMemoryEmployeeRepository(),
+                branch_repo=InMemoryBranchRepository(),
                 incidence_repo=InMemoryIncidenceRepository(),
                 schedule_assignment_repo=InMemoryScheduleAssignmentRepository(),
                 audit_repo=InMemoryAuditLogRepository(),
@@ -149,6 +153,7 @@ class PersistenceFactory:
             attendance_repo=SqlAttendanceRepository(session_factory),
             daily_attendance_repo=SqlDailyAttendanceRepository(session_factory),
             employee_repo=SqlEmployeeRepository(session_factory),
+            branch_repo=SqlBranchRepository(session_factory),
             incidence_repo=SqlIncidenceRepository(session_factory),
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),
@@ -168,6 +173,7 @@ class PersistenceFactory:
             attendance_repo=SqlAttendanceRepository(session_factory),
             daily_attendance_repo=SqlDailyAttendanceRepository(session_factory),
             employee_repo=SqlEmployeeRepository(session_factory),
+            branch_repo=SqlBranchRepository(session_factory),
             incidence_repo=SqlIncidenceRepository(session_factory),
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),

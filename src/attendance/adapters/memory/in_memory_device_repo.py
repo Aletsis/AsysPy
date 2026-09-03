@@ -49,3 +49,11 @@ class InMemoryDeviceRepository(DeviceRepository, DeviceRegistry):
         if branch_id is not None:
             devices = [d for d in devices if d.branch_id == branch_id]
         return devices
+
+    def delete(self, device_id: int) -> bool:
+        if device_id in self._by_id:
+            device = self._by_id.pop(device_id)
+            if device.serial_number and device.serial_number in self._by_serial:
+                del self._by_serial[device.serial_number]
+            return True
+        return False

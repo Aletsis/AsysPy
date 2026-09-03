@@ -43,3 +43,20 @@ class InMemoryScheduleAssignmentRepository(EmployeeScheduleAssignmentRepository)
     def close_assignment(self, assignment_id: int, valid_until: date) -> None:
         if assignment_id in self._assignments:
             self._assignments[assignment_id].valid_until = valid_until
+
+    def get_by_id(self, assignment_id: int) -> EmployeeScheduleAssignment | None:
+        return self._assignments.get(assignment_id)
+
+    def list_all(
+        self, employee_pin: str | None = None
+    ) -> list[EmployeeScheduleAssignment]:
+        assignments = list(self._assignments.values())
+        if employee_pin:
+            assignments = [a for a in assignments if a.employee_pin == employee_pin]
+        return sorted(assignments, key=lambda a: (a.valid_from, a.id or 0), reverse=True)
+
+    def delete(self, assignment_id: int) -> bool:
+        if assignment_id in self._assignments:
+            del self._assignments[assignment_id]
+            return True
+        return False

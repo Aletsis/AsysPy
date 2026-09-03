@@ -6,9 +6,13 @@ from typing import Sequence
 
 from attendance.adapters.cli.commands import (
     register_attendance_subparser,
+    register_branch_subparser,
     register_db_subparser,
     register_device_subparser,
+    register_employee_subparser,
     register_report_subparser,
+    register_schedule_subparser,
+    register_shift_subparser,
 )
 from attendance.adapters.cli.context import CLIContext, get_common_parser, load_env_file
 from attendance.adapters.cli.formatters import red, yellow
@@ -36,6 +40,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Registrar grupos de comandos
     register_device_subparser(subparsers)
+    register_employee_subparser(subparsers)
+    register_branch_subparser(subparsers)
+    register_shift_subparser(subparsers)
+    register_schedule_subparser(subparsers)
     register_attendance_subparser(subparsers)
     register_report_subparser(subparsers)
     register_db_subparser(subparsers)

@@ -28,6 +28,15 @@ class FakeAssignmentRepository:
     def save(self, assignment):
         return assignment
 
+    def get_by_id(self, assignment_id: int):
+        return self._assignment if self._assignment and self._assignment.id == assignment_id else None
+
+    def list_all(self, employee_pin: str | None = None):
+        return [self._assignment] if self._assignment else []
+
+    def delete(self, assignment_id: int) -> bool:
+        return True
+
 
 MATUTINO = ShiftDefinition(
     id=1,

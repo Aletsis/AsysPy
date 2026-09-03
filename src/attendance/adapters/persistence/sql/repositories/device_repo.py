@@ -82,3 +82,12 @@ class SqlDeviceRepository(DeviceRepository, DeviceRegistry):
             stmt = stmt.order_by(DeviceModel.name.asc(), DeviceModel.id.asc())
             models = session.scalars(stmt).all()
             return [device_to_domain(m) for m in models]
+
+    def delete(self, device_id: int) -> bool:
+        with self.session_factory() as session:
+            model = session.get(DeviceModel, device_id)
+            if model:
+                session.delete(model)
+                session.commit()
+                return True
+            return False

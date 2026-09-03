@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Architecture: Hexagonal](https://img.shields.io/badge/architecture-Hexagonal%20%2F%20DDD-green.svg)](#arquitectura-del-sistema)
 [![Plataformas](https://img.shields.io/badge/plataformas-Web%20%7C%20CLI%20%7C%20Desktop%20%7C%20Mobile-informational.svg)](#-visión-multiplataforma-y-despliegue-modular)
-[![Tests](https://img.shields.io/badge/tests-124%20passed-brightgreen.svg)](#-pruebas-y-calidad)
+[![Tests](https://img.shields.io/badge/tests-132%20passed-brightgreen.svg)](#-pruebas-y-calidad)
 [![Linter](https://img.shields.io/badge/linter-ruff-black.svg)](#-pruebas-y-calidad)
 [![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue.svg)](#-pruebas-y-calidad)
 
@@ -193,9 +193,9 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 | **Adaptadores In-Memory** | ✅ Completo | Suite completa de repositorios en memoria para pruebas. |
 | **Adaptadores SQL (SQLAlchemy)** | ✅ Completo | Modelos, mappers y repositorios relacionales para SQLite, Postgres, MySQL y SQL Server. |
 | **Adaptador Base MongoDB** | 🔄 Fase 1 | Cliente de conexión base (`MongoClientWrapper`). Repositorios NoSQL programados. |
-| **Pruebas Automatizadas** | ✅ 124/124 | 124 pruebas unitarias e integrales pasando con 100% de éxito. |
-| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 133 archivos) limpios. |
-| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con subcomandos `device`, `attendance`, `report` y `db`. |
+| **Pruebas Automatizadas** | ✅ 132/132 | 132 pruebas unitarias e integrales pasando con 100% de éxito. |
+| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 142 archivos) limpios. |
+| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con CRUD completo para branch, employee, shift, schedule, device, más attendance, report y db. |
 | **Capa Web / API REST** | ⏳ Planificado | En diseño de endpoints bajo FastAPI. |
 | **Capa Desktop GUI** | ⏳ Planificado | Planeada con PySide6 / Flet con SQLite local. |
 | **Capa Mobile (Android/iOS)** | ⏳ Planificado | Planeada para modo quiosco y supervisores de campo. |
@@ -377,7 +377,7 @@ El proyecto mantiene un estándar riguroso de calidad de código y cobertura:
 ```bash
 poetry run pytest -v
 ```
-Resultado esperado: **124 tests pasando**.
+Resultado esperado: **132 tests pasando**.
 
 ### Análisis de Estilo y Linting (Ruff)
 ```bash
@@ -388,7 +388,7 @@ poetry run ruff check .
 ```bash
 poetry run mypy src tests
 ```
-Resultado esperado: **Success: no issues found in 133 source files**.
+Resultado esperado: **Success: no issues found in 142 source files**.
 
 ---
 
@@ -402,12 +402,16 @@ El núcleo del dominio, los casos de uso, la capa relacional y la CLI unificada 
 - [ ] **Dockerización de Producción**: Imagen Docker ligera y configuración para orquestación en la nube.
 
 ### Fase 2: Herramienta de Línea de Comandos (CLI)
-- [x] **CLI Unificada (`asistpy`)**:
-  - `asistpy device probe / sync / list`: Sondeo, catálogo y sincronización incremental desde terminal.
-  - `asistpy attendance evaluate / list / adjust`: Evaluación de jornadas, consulta y ajustes manuales con auditoría inmutable.
-  - `asistpy report summary`: Generación de reportes tabulares en consola o volcados a CSV/JSON.
-  - `asistpy db init / status`: Inicialización, creación de esquema y diagnóstico de bases de datos.
-- [x] **Extra de Dependencias `[cli]`**: Empaquetado ligero para terminal y manual de uso detallado en `DOCS/CLI_MANUAL.md`.
+- [x] **CLI Unificada (`asistpy`) con CRUD Completo**:
+  - `asistpy branch [add | show | list | edit | delete]`: Catálogo de sucursales con persistencia en BD.
+  - `asistpy employee [add | show | list | edit | delete]`: Catálogo de empleados y colaboradores.
+  - `asistpy shift [add | show | list | edit | delete]`: Catálogo de turnos, tolerancias y jornadas nocturnas.
+  - `asistpy schedule [assign | show | list | edit | close | delete]`: Asignaciones de horarios.
+  - `asistpy device [add | show | list | edit | delete | probe | sync]`: Catálogo y sincronización de relojes biométricos.
+  - `asistpy attendance [evaluate | list | adjust]`: Evaluación diaria y ajustes manuales con auditoría.
+  - `asistpy report summary`: Generación y exportación de reportes a consola, CSV o JSON.
+  - `asistpy db [init | status]`: Inicialización, creación de esquema y diagnóstico de bases de datos.
+- [x] **Extra de Dependencias `[cli]`**: Empaquetado ligero para terminal y manual de uso exhaustivo en `DOCS/CLI_MANUAL.md`.
 
 ### Fase 3: Aplicación de Escritorio Multiplataforma (Windows, macOS, Linux)
 - [ ] **Interfaz Gráfica de Escritorio**: Implementación de interfaz ligera (PySide6 / Flet) para casetas de control, estaciones de RRHH locales y administradores de sucursal.

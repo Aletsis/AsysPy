@@ -9,6 +9,7 @@ from typing import Any
 from attendance.adapters.persistence.sql.models import (
     AttendanceLogModel,
     AuditLogModel,
+    BranchModel,
     DailyAttendanceModel,
     DeviceModel,
     EmployeeModel,
@@ -27,6 +28,8 @@ from attendance.domain.device.enums import AuthMethod, DeviceProtocol, LogStatus
 from attendance.domain.device.log import AttendanceLog
 from attendance.domain.incidence.enums import JustificationStatus, JustificationType
 from attendance.domain.incidence.justification import Justification
+from attendance.domain.organization.address import Address
+from attendance.domain.organization.branch import Branch
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
 from attendance.domain.schedule.enums import (
@@ -519,4 +522,64 @@ def device_to_model(entity: Device) -> DeviceModel:
         capabilities=capabilities_to_dict(entity.capabilities),
         active=entity.active,
     )
+
+
+# ============================================================================
+# Branch & Address Mappers
+# ============================================================================
+def address_to_dict(address: Address | None) -> dict[str, Any] | None:
+    """Convierte un Address Value Object a diccionario serializable."""
+    if address is None:
+        return None
+    return {
+        "street": address.street,
+        "exterior_number": address.exterior_number,
+        "interior_number": address.interior_number,
+        "postal_code": address.postal_code,
+        "neighborhood": address.neighborhood,
+        "municipality": address.municipality,
+        "state": address.state,
+        "country": address.country,
+    }
+
+
+def address_from_dict(data: dict[str, Any] | None) -> Address | None:
+    """Reconstruye un Address Value Object desde un diccionario."""
+    if not data:
+        return None
+    return Address(
+        street=data.get("street", ""),
+        exterior_number=data.get("exterior_number", ""),
+        interior_number=data.get("interior_number"),
+        postal_code=data.get("postal_code", ""),
+        neighborhood=data.get("neighborhood", ""),
+        municipality=data.get("municipality", ""),
+        state=data.get("state", ""),
+        country=data.get("country", "México"),
+    )
+
+
+def branch_to_domain(model: BranchModel) -> Branch:
+    """Convierte un BranchModel a la entidad Branch del dominio."""
+    return Branch(
+        id=model.id,
+        name=model.name,
+        code=model.code,
+        address=address_from_dict(model.address),
+        timezone=model.timezone,
+        active=model.active,
+    )
+
+
+def branch_to_model(entity: Branch) -> BranchModel:
+    """Convierte una entidad Branch a BranchModel."""
+    return BranchModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        code=entity.code,
+        address=address_to_dict(entity.address),
+        timezone=entity.timezone,
+        active=entity.active,
+    )
+
 

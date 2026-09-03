@@ -73,3 +73,28 @@ class SqlScheduleAssignmentRepository(EmployeeScheduleAssignmentRepository):
             session.commit()
             assignment.id = new_model.id
             return schedule_assignment_to_domain(new_model)
+
+    def get_by_id(self, assignment_id: int) -> EmployeeScheduleAssignment | None:
+        with self.session_factory() as session:
+            model = session.get(ScheduleAssignmentModel, assignment_id)
+            return schedule_assignment_to_domain(model) if model else None
+
+    def list_all(
+        self, employee_pin: str | None = None
+    ) -> list[EmployeeScheduleAssignment]:
+        with self.session_factory() as session:
+            stmt = select(ScheduleAssignmentModel)
+            if employee_pin:
+                stmt = stmt.where(ScheduleAssignmentModel.employee_pin == employee_pin)
+            stmt = stmt.order_by(ScheduleAssignmentModel.valid_from.desc(), ScheduleAssignmentModel.id.desc())
+            models = session.scalars(stmt).all()
+            return [schedule_assignment_to_domain(m) for m in models]
+
+    def delete(self, assignment_id: int) -> bool:
+        with self.session_factory() as session:
+            model = session.get(ScheduleAssignmentModel, assignment_id)
+            if model:
+                session.delete(model)
+                session.commit()
+                return True
+            return False
