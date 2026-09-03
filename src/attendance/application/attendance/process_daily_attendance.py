@@ -59,14 +59,18 @@ class ProcessDailyAttendance:
         if shift_definitions is not None:
             self.shift_definitions = dict(shift_definitions)
         elif self.shift_repo is not None:
-            self.shift_definitions = {s.id: s for s in self.shift_repo.list_all()}
+            self.shift_definitions = {
+                s.id: s for s in self.shift_repo.list_all() if s.id is not None
+            }
         else:
             self.shift_definitions = {}
 
         if rotation_patterns is not None:
             self.rotation_patterns = dict(rotation_patterns)
         elif self.rotation_pattern_repo is not None:
-            self.rotation_patterns = {r.id: r for r in self.rotation_pattern_repo.list_all()}
+            self.rotation_patterns = {
+                r.id: r for r in self.rotation_pattern_repo.list_all() if r.id is not None
+            }
         else:
             self.rotation_patterns = {}
 
@@ -98,7 +102,7 @@ class ProcessDailyAttendance:
                 and self.shift_repo is not None
             ):
                 s = self.shift_repo.get_by_id(active_assignment.shift_definition_id)
-                if s is not None:
+                if s is not None and s.id is not None:
                     shift_dict[s.id] = s
                     self.shift_definitions[s.id] = s
 
@@ -108,14 +112,14 @@ class ProcessDailyAttendance:
                 and self.rotation_pattern_repo is not None
             ):
                 r = self.rotation_pattern_repo.get_by_id(active_assignment.rotation_pattern_id)
-                if r is not None:
+                if r is not None and r.id is not None:
                     rot_dict[r.id] = r
                     self.rotation_patterns[r.id] = r
                     if self.shift_repo is not None:
                         for s_id in r.shift_sequence:
                             if s_id is not None and s_id not in shift_dict:
                                 s = self.shift_repo.get_by_id(s_id)
-                                if s is not None:
+                                if s is not None and s.id is not None:
                                     shift_dict[s.id] = s
                                     self.shift_definitions[s.id] = s
 
@@ -123,7 +127,7 @@ class ProcessDailyAttendance:
             for exc in self.schedule_exceptions:
                 if exc.shift_definition_id is not None and exc.shift_definition_id not in shift_dict:
                     s = self.shift_repo.get_by_id(exc.shift_definition_id)
-                    if s is not None:
+                    if s is not None and s.id is not None:
                         shift_dict[s.id] = s
                         self.shift_definitions[s.id] = s
 

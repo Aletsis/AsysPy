@@ -63,8 +63,8 @@ class PersistenceBundle:
     audit_repo: AuditLogRepository
     sync_state_repo: SyncStateRepository
     device_repo: DeviceRepository
-    shift_repo: ShiftRepository | None = None
-    rotation_pattern_repo: RotationPatternRepository | None = None
+    shift_repo: ShiftRepository
+    rotation_pattern_repo: RotationPatternRepository
     database: Database | None = None
 
 

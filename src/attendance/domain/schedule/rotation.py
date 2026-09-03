@@ -10,7 +10,7 @@ from .enums import RotationFrequency
 class RotationPattern:
     """Patrón de rotación cíclica de turnos (ej. 6x1, rotación semanal de turnos, etc.)."""
 
-    id: int
+    id: int | None
     name: str
     shift_sequence: list[int | None]  # None representa día de descanso dentro de la secuencia
     frequency: RotationFrequency

@@ -1,8 +1,8 @@
 """Pruebas de persistencia e integración para el catálogo de turnos y rotaciones SQL."""
 
 from datetime import date, datetime, time
+
 import pytest
-from sqlalchemy.orm import Session
 
 from attendance.adapters.persistence.factory import PersistenceFactory
 from attendance.application.attendance.process_daily_attendance import ProcessDailyAttendance
@@ -184,7 +184,7 @@ def test_process_daily_attendance_with_24x48_rotation_from_sql_db(sql_bundle) ->
     )
 
     # 3. Registrar empleado
-    emp = sql_bundle.employee_repo.save(
+    sql_bundle.employee_repo.save(
         Employee(
             id=None,
             pin="MED001",

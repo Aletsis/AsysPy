@@ -39,7 +39,7 @@ def resolve_expected_shift(
             and shift_repo is not None
         ):
             s = shift_repo.get_by_id(active_assignment.shift_definition_id)
-            if s is not None:
+            if s is not None and s.id is not None:
                 shift_dict[s.id] = s
 
         if (
@@ -48,20 +48,20 @@ def resolve_expected_shift(
             and rotation_pattern_repo is not None
         ):
             r = rotation_pattern_repo.get_by_id(active_assignment.rotation_pattern_id)
-            if r is not None:
+            if r is not None and r.id is not None:
                 rot_dict[r.id] = r
                 if shift_repo is not None:
                     for s_id in r.shift_sequence:
                         if s_id is not None and s_id not in shift_dict:
                             s = shift_repo.get_by_id(s_id)
-                            if s is not None:
+                            if s is not None and s.id is not None:
                                 shift_dict[s.id] = s
 
     if shift_repo is not None:
         for exc in exceptions:
             if exc.shift_definition_id is not None and exc.shift_definition_id not in shift_dict:
                 s = shift_repo.get_by_id(exc.shift_definition_id)
-                if s is not None:
+                if s is not None and s.id is not None:
                     shift_dict[s.id] = s
 
     return ScheduleResolver.resolve(

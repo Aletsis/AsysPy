@@ -47,7 +47,7 @@ class ShiftSegment:
 class ShiftDefinition:
     """Plantilla de turno reutilizable. Soporta turnos continuos y turnos partidos."""
 
-    id: int
+    id: int | None
     name: str
     category: ShiftCategory = ShiftCategory.PERSONALIZADO
     start_time: time | None = None

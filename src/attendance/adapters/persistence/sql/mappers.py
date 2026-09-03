@@ -3,7 +3,7 @@
 Garantiza que el Dominio permanezca completamente desacoplado de la base de datos.
 """
 
-from datetime import date, datetime, time
+from datetime import datetime, time
 from typing import Any
 
 from attendance.adapters.persistence.sql.models import (
@@ -29,7 +29,12 @@ from attendance.domain.incidence.enums import JustificationStatus, Justification
 from attendance.domain.incidence.justification import Justification
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
-from attendance.domain.schedule.enums import AssignmentMode, RotationFrequency, ShiftCategory, Weekday
+from attendance.domain.schedule.enums import (
+    AssignmentMode,
+    RotationFrequency,
+    ShiftCategory,
+    Weekday,
+)
 from attendance.domain.schedule.rotation import RotationPattern
 from attendance.domain.schedule.shift import ShiftDefinition, ShiftSegment
 
