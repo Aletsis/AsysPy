@@ -86,8 +86,9 @@ Uno de los pilares de diseño de AsistPy es su **portabilidad extrema y versatil
 
 3. 🖥️ **Aplicación de Escritorio Nativa (Windows, macOS, Linux)**:
    - Para uso en estaciones de trabajo individuales, computadoras de recursos humanos o casetas de vigilancia en fábricas/oficinas que gestionan relojes locales.
-   - Empaquetada como ejecutable autocontenido (.exe, .dmg, AppImage).
-   - Puede operar con base de datos local SQLite (cero configuración externa) o conectarse a una base de datos centralizada.
+   - Ejecutable mediante el comando `asistpy-gui` (o paquete autocontenido `.exe`, `.dmg`, `AppImage`).
+   - Cuenta con un **Asistente Interactivo (Setup Wizard)** en el primer arranque para configurar la base de datos (SQLite, Postgres, MySQL, SQL Server) e inicializar el primer reloj biométrico sin editar archivos.
+   - Consulta el [Manual de la GUI de Escritorio (DOCS/GUI_MANUAL.md)](DOCS/GUI_MANUAL.md).
 
 4. 📱 **Aplicación Móvil (Android, iOS)**:
    - Para supervisores y jefes de cuadrilla en faenas mineras, construcción o trabajo de campo donde se requiere verificar asistencias in situ o usar una tablet en modo quiosco.

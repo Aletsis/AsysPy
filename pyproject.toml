@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+desktop = ["PySide6 (>=6.6.0,<7.0.0)"]
 cli = ["sqlalchemy (>=2.0.0,<3.0.0)"]
 sqlite = ["sqlalchemy (>=2.0.0,<3.0.0)"]
 postgres = ["sqlalchemy (>=2.0.0,<3.0.0)", "psycopg[binary] (>=3.1.0)"]
@@ -21,6 +22,7 @@ mysql = ["sqlalchemy (>=2.0.0,<3.0.0)", "pymysql (>=1.1.0)"]
 sqlserver = ["sqlalchemy (>=2.0.0,<3.0.0)", "pyodbc (>=5.0.0)"]
 mongo = ["pymongo (>=4.6.0)"]
 all = [
+    "PySide6 (>=6.6.0,<7.0.0)",
     "sqlalchemy (>=2.0.0,<3.0.0)",
     "psycopg[binary] (>=3.1.0)",
     "pymysql (>=1.1.0)",
@@ -30,6 +32,7 @@ all = [
 
 [project.scripts]
 asistpy = "attendance.adapters.cli.main:main"
+asistpy-gui = "attendance.adapters.gui.__main__:main"
 
 [tool.poetry]
 packages = [{include = "attendance", from = "src"}]
