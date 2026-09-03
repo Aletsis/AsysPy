@@ -1,0 +1,29 @@
+# Auto detect text files and perform LF normalization on checkin
+* text=auto eol=lf
+
+# Python files
+*.py text diff=python
+*.pyi text diff=python
+
+# Configuration and documentation
+*.toml text
+*.yaml text
+*.yml text
+*.json text
+*.md text
+*.txt text
+.gitignore text
+.gitattributes text
+.env.example text
+
+# Binary files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+*.pyc binary
+*.pyo binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

@@ -1,0 +1,73 @@
+# ==============================================================================
+# AsistPy - Git Ignore Configuration
+# ==============================================================================
+
+# Entornos virtuales de Python
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Bytecode y archivos generados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Paquetes y distribuciones
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Pruebas y cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Tipado y linters
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# Archivos de entorno y credenciales (mantener .env.example público)
+.env
+.env.*
+!.env.example
+
+# Bases de datos locales generadas en desarrollo o pruebas
+*.db
+*.sqlite
+*.sqlite3
+asistpy.db
+
+# Logs
+*.log
+logs/
+
+# Editores e IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Directorios temporales de scratch
+scratch/
+tmp/

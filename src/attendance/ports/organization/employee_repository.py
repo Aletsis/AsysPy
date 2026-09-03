@@ -1,0 +1,21 @@
+"""Puerto EmployeeRepository para gestión de empleados."""
+
+from typing import Protocol
+
+from attendance.domain.organization.employee import Employee
+
+
+class EmployeeRepository(Protocol):
+    """Contrato de persistencia y consulta para empleados de la organización."""
+
+    def save(self, employee: Employee) -> Employee: ...
+
+    def get_by_pin(self, pin: str) -> Employee | None: ...
+
+    def get_by_id(self, employee_id: int) -> Employee | None: ...
+
+    def list_active(self, branch_id: int | None = None) -> list[Employee]: ...
+
+    def get_active_employees(self, branch_id: int | None = None) -> list[Employee]: ...
+
+    def list_all(self, branch_id: int | None = None) -> list[Employee]: ...
