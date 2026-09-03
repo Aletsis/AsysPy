@@ -14,6 +14,7 @@ from attendance.adapters.cli.commands import (
     register_report_subparser,
     register_schedule_subparser,
     register_shift_subparser,
+    register_worker_subparser,
 )
 from attendance.adapters.cli.context import CLIContext, get_common_parser, load_env_file
 from attendance.adapters.cli.formatters import red, yellow
@@ -49,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     register_attendance_subparser(subparsers)
     register_report_subparser(subparsers)
     register_db_subparser(subparsers)
+    register_worker_subparser(subparsers)
 
     return parser
 

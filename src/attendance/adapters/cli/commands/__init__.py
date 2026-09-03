@@ -9,6 +9,7 @@ from .employee import register_employee_subparser
 from .report import register_report_subparser
 from .schedule import register_schedule_subparser
 from .shift import register_shift_subparser
+from .worker import register_worker_subparser
 
 __all__ = [
     "register_attendance_subparser",
@@ -20,4 +21,5 @@ __all__ = [
     "register_report_subparser",
     "register_schedule_subparser",
     "register_shift_subparser",
+    "register_worker_subparser",
 ]

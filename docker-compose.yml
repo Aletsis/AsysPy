@@ -1,4 +1,24 @@
 services:
+  # Demonio / Worker en Segundo Plano 24/7 de AsistPy
+  asistpy-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asistpy-worker
+    restart: unless-stopped
+    environment:
+      - PERSISTENCE_BACKEND=postgres
+      - DATABASE_URL=postgresql+psycopg://postgres:postgrespassword@postgres:5432/asistpy
+      - SYNC_INTERVAL_SECONDS=300
+      - NIGHTLY_PROCESSING_TIME=23:59
+      - ZK_TIMEOUT=60
+      - SYNC_STOP_ON_ERROR=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - asistpy_data:/app/data
+
   # Base de Datos PostgreSQL
   postgres:
     image: postgres:16-alpine
@@ -12,6 +32,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d asistpy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Base de Datos MySQL
   mysql:
@@ -43,6 +68,7 @@ services:
       - mongo_data:/data/db
 
 volumes:
+  asistpy_data:
   postgres_data:
   mysql_data:
   mongo_data:

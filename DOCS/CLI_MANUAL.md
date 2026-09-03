@@ -19,8 +19,10 @@
 11. [Control de Asistencia y Jornadas (`asistpy attendance`)](#-control-de-asistencia-y-jornadas-asistpy-attendance)
 12. [Reportes y Exportación (`asistpy report`)](#-reportes-y-exportación-asistpy-report)
 13. [Gestión de Base de Datos (`asistpy db`)](#-gestión-de-base-de-datos-asistpy-db)
-14. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
-15. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
+14. [Demonio en Segundo Plano (`asistpy worker`)](#-demonio-en-segundo-plano-asistpy-worker)
+15. [Despliegue con Docker y Docker Compose](#-despliegue-con-docker-y-docker-compose)
+16. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
+17. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
 
 ---
 
@@ -125,6 +127,16 @@ asistpy branch add \
   --postal-code "44100"
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Sucursal Sucursal Matriz (Código: MAT-01) registrada exitosamente con ID 1.
+┌────┬────────┬─────────────────┬─────────────────────┬────────┐
+│ ID │ Código │ Nombre          │ Zona Horaria        │ Estado │
+├────┼────────┼─────────────────┼─────────────────────┼────────┤
+│  1 │ MAT-01 │ Sucursal Matriz │ America/Mexico_City │ Activo │
+└────┴────────┴─────────────────┴─────────────────────┴────────┘
+```
+
 ### 2. `asistpy branch show` (Ver Detalle)
 ```bash
 # Por código
@@ -141,6 +153,18 @@ asistpy branch list
 
 # Listar solo activas
 asistpy branch list --active-only
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬────────┬────────────────────┬─────────────────────┬─────────────────┬────────┐
+│ ID │ Código │ Nombre             │ Zona Horaria        │ Ciudad / Estado │ Estado │
+├────┼────────┼────────────────────┼─────────────────────┼─────────────────┼────────┤
+│  1 │ MAT-01 │ Sucursal Matriz    │ America/Mexico_City │ -               │ Activo │
+│  2 │ GDL-01 │ Planta Guadalajara │ America/Mexico_City │ Guadalajara     │ Activo │
+└────┴────────┴────────────────────┴─────────────────────┴─────────────────┴────────┘
+
+Total sucursales: 2
 ```
 
 ### 4. `asistpy branch edit` (Modificar)
@@ -179,6 +203,16 @@ asistpy department add --name "Mantenimiento Planta" --code "MNT-01" --branch-id
 asistpy department add --name "Área Temporal" --code "TMP-01" --inactive
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Departamento Recursos Humanos registrado exitosamente con ID 1.
+┌────┬────────┬──────────────────┬─────────────┬────────┐
+│ ID │ Código │ Nombre           │ Sucursal ID │ Estado │
+├────┼────────┼──────────────────┼─────────────┼────────┤
+│  1 │ RH-01  │ Recursos Humanos │      1      │ Activo │
+└────┴────────┴──────────────────┴─────────────┴────────┘
+```
+
 ### 2. `asistpy department show` (Ver Detalle)
 ```bash
 # Consultar por código
@@ -198,6 +232,18 @@ asistpy department list --branch-id 1
 
 # Filtrar solo activos
 asistpy department list --active-only
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬────────┬──────────────────────┬─────────────┬────────┐
+│ ID │ Código │ Nombre               │ Sucursal ID │ Estado │
+├────┼────────┼──────────────────────┼─────────────┼────────┤
+│  1 │ RH-01  │ Recursos Humanos     │      1      │ Activo │
+│  2 │ MNT-01 │ Mantenimiento Planta │      1      │ Activo │
+└────┴────────┴──────────────────────┴─────────────┴────────┘
+
+Total departamentos: 2
 ```
 
 ### 4. `asistpy department edit` (Modificar)
@@ -241,9 +287,40 @@ asistpy employee add \
   --branch-id 1
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Empleado Carlos Gómez (PIN: E101) registrado exitosamente.
+┌────┬──────┬─────────────────┬──────────────┬──────────────┬──────────┬───────────────┬────────┐
+│ ID │ PIN  │ Nombre Completo │ Puesto       │ Departamento │ Sucursal │ Fecha Ingreso │ Estado │
+├────┼──────┼─────────────────┼──────────────┼──────────────┼──────────┼───────────────┼────────┤
+│  1 │ E101 │ Carlos Gómez    │ Operador CNC │            2 │        1 │  2024-03-15   │ Activo │
+└────┴──────┴─────────────────┴──────────────┴──────────────┴──────────┴───────────────┴────────┘
+```
+
 ### 2. `asistpy employee show` (Ver Detalle)
 ```bash
 asistpy employee show --pin "E101"
+```
+
+**Salida de ejemplo:**
+```text
+Detalle de Empleado:
+┌───────────────────────┬──────────────┐
+│ Propiedad             │ Valor        │
+├───────────────────────┼──────────────┤
+│ ID                    │ 1            │
+│ PIN / Identificador   │ E101         │
+│ Nombre Completo       │ Carlos Gómez │
+│ Nombre                │ Carlos       │
+│ Apellido Paterno      │ Gómez        │
+│ Apellido Materno      │ López        │
+│ Fecha de Contratación │ 2024-03-15   │
+│ Sexo                  │ male         │
+│ Puesto / Cargo        │ Operador CNC │
+│ Departamento ID       │ 2            │
+│ Sucursal Base ID      │ 1            │
+│ Estado                │ Activo       │
+└───────────────────────┴──────────────┘
 ```
 
 ### 3. `asistpy employee list` (Listar)
@@ -259,6 +336,18 @@ asistpy employee list --active-only
 
 # Buscar por coincidencia de PIN
 asistpy employee list --pin "101"
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬──────┬─────────────────┬──────────────┬──────────────┬──────────┬───────────────┬────────┐
+│ ID │ PIN  │ Nombre Completo │ Puesto       │ Departamento │ Sucursal │ Fecha Ingreso │ Estado │
+├────┼──────┼─────────────────┼──────────────┼──────────────┼──────────┼───────────────┼────────┤
+│  1 │ E101 │ Carlos Gómez    │ Operador CNC │            2 │        1 │  2024-03-15   │ Activo │
+│  2 │ E102 │ Ana Martínez    │ RRHH General │            1 │        1 │  2023-01-10   │ Activo │
+└────┴──────┴─────────────────┴──────────────┴──────────────┴──────────┴───────────────┴────────┘
+
+Total empleados: 2
 ```
 
 ### 4. `asistpy employee edit` (Modificar)
@@ -293,6 +382,16 @@ asistpy shift add --name "Matutino 8-16" --start-time "08:00" --end-time "16:00"
 asistpy shift add --name "Nocturno 22-06" --start-time "22:00" --end-time "06:00" --tolerance 10 --crosses-midnight --category nocturno
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Turno Matutino 8-16 registrado exitosamente con ID 1.
+┌────┬───────────────┬───────────┬─────────┬────────┬────────────┬──────────────────┐
+│ ID │ Nombre        │ Categoría │ Entrada │ Salida │ Tolerancia │ Cruza Medianoche │
+├────┼───────────────┼───────────┼─────────┼────────┼────────────┼──────────────────┤
+│  1 │ Matutino 8-16 │ regular   │  08:00  │ 16:00  │     15 min │        No        │
+└────┴───────────────┴───────────┴─────────┴────────┴────────────┴──────────────────┘
+```
+
 ### 2. `asistpy shift show` (Ver Detalle)
 ```bash
 asistpy shift show --shift-id 1
@@ -301,6 +400,18 @@ asistpy shift show --shift-id 1
 ### 3. `asistpy shift list` (Listar)
 ```bash
 asistpy shift list
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬────────────────┬───────────┬─────────┬────────┬────────────┬──────────────────┐
+│ ID │ Nombre         │ Categoría │ Entrada │ Salida │ Tolerancia │ Cruza Medianoche │
+├────┼────────────────┼───────────┼─────────┼────────┼────────────┼──────────────────┤
+│  1 │ Matutino 8-16  │ regular   │  08:00  │ 16:00  │     15 min │        No        │
+│  2 │ Nocturno 22-06 │ nocturno  │  22:00  │ 06:00  │     10 min │        Sí        │
+└────┴────────────────┴───────────┴─────────┴────────┴────────────┴──────────────────┘
+
+Total turnos: 2
 ```
 
 ### 4. `asistpy shift edit` (Modificar)
@@ -338,6 +449,16 @@ asistpy schedule assign \
   --valid-until 2026-12-31
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Horario asignado exitosamente con ID 1.
+┌────┬──────────────┬──────────────┬───────────────┬───────┬──────────────┬──────────────┐
+│ ID │ PIN Empleado │ Empleado     │ Turno         │ Modo  │ Válido Desde │ Válido Hasta │
+├────┼──────────────┼──────────────┼───────────────┼───────┼──────────────┼──────────────┤
+│  1 │ E101         │ Carlos Gómez │ Matutino 8-16 │ fixed │  2026-09-01  │  Indefinido  │
+└────┴──────────────┴──────────────┴───────────────┴───────┴──────────────┴──────────────┘
+```
+
 ### 2. `asistpy schedule show` (Ver Detalle)
 ```bash
 asistpy schedule show --assignment-id 1
@@ -350,6 +471,17 @@ asistpy schedule list
 
 # Filtrar por empleado
 asistpy schedule list --employee-pin "E101"
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬──────────────┬───────┬──────────┬──────────────┬──────────────┐
+│ ID │ PIN Empleado │ Modo  │ Turno ID │ Válido Desde │ Válido Hasta │
+├────┼──────────────┼───────┼──────────┼──────────────┼──────────────┤
+│  1 │ E101         │ fixed │        1 │  2026-09-01  │  Indefinido  │
+└────┴──────────────┴───────┴──────────┴──────────────┴──────────────┘
+
+Total asignaciones: 1
 ```
 
 ### 4. `asistpy schedule edit` (Modificar)
@@ -385,6 +517,16 @@ asistpy device add \
   --location "Lobby Principal"
 ```
 
+**Salida de ejemplo:**
+```text
+✔ Dispositivo registrado exitosamente con ID 1.
+┌────┬─────────────────┬───────────────┬────────┬──────────┬───────────────┬────────┐
+│ ID │ Nombre          │ IP            │ Puerto │ Sucursal │ Serie         │ Estado │
+├────┼─────────────────┼───────────────┼────────┼──────────┼───────────────┼────────┤
+│  1 │ Reloj Recepción │ 192.168.1.200 │   4370 │        1 │ CJK9203841029 │ Activo │
+└────┴─────────────────┴───────────────┴────────┴──────────┴───────────────┴────────┘
+```
+
 ### 2. `asistpy device show` (Ver Detalle)
 ```bash
 asistpy device show --device-id 1
@@ -400,6 +542,18 @@ asistpy device list --branch-id 1
 
 # Filtrar solo activos
 asistpy device list --active-only
+```
+
+**Salida de ejemplo:**
+```text
+┌────┬─────────────────┬───────────────┬────────┬──────────┬────────┬─────────────────────────┐
+│ ID │ Nombre          │ IP            │ Puerto │ Sucursal │ Estado │ Último UID Sincronizado │
+├────┼─────────────────┼───────────────┼────────┼──────────┼────────┼─────────────────────────┤
+│  1 │ Reloj Recepción │ 192.168.1.200 │   4370 │        1 │ Activo │                    4820 │
+│  2 │ Reloj Comedor   │ 192.168.1.201 │   4370 │        1 │ Activo │                    1540 │
+└────┴─────────────────┴───────────────┴────────┴──────────┴────────┴─────────────────────────┘
+
+Total dispositivos: 2
 ```
 
 ### 4. `asistpy device edit` (Modificar)
@@ -425,6 +579,23 @@ asistpy device probe --ip 192.168.1.200 --port 4370
 asistpy device probe --device-id 1
 ```
 
+**Salida de ejemplo:**
+```text
+Sondeando dispositivo en 192.168.1.200:4370 (timeout=60s)...
+
+✔ Conexión exitosa con el reloj biométrico.
+
+┌────────────────────────────┬───────────────────┐
+│ Parámetro                  │ Valor             │
+├────────────────────────────┼───────────────────┤
+│ Dirección IP               │ 192.168.1.200     │
+│ Puerto TCP                 │ 4370              │
+│ Versión Firmware           │ Ver 6.60 Nov 2021 │
+│ Número de Serie            │ CJK9203841029     │
+│ Marcaciones en Dispositivo │ 4820              │
+└────────────────────────────┴───────────────────┘
+```
+
 ### 7. `asistpy device sync` (Sincronización Incremental)
 Descarga e inserta nuevos registros de marcaciones crudas (`AttendanceLog`), evitando duplicados con control de marcas de agua (UID).
 ```bash
@@ -436,6 +607,23 @@ asistpy device sync --branch-id 1
 
 # 3. Sincronizar un único reloj por su ID
 asistpy device sync --device-id 1
+```
+
+**Salida de ejemplo:**
+```text
+Iniciando sincronización masiva de dispositivos activos...
+✔ Sincronización finalizada para 'Reloj Recepción': 14 nuevas marcaciones almacenadas.
+✔ Sincronización finalizada para 'Reloj Comedor': 5 nuevas marcaciones almacenadas.
+
+Resumen de sincronización:
+┌───────────────────────────┬───────┐
+│ Métrica                   │ Valor │
+├───────────────────────────┼───────┤
+│ Dispositivos Procesados   │ 2     │
+│ Sincronizados con Éxito   │ 2     │
+│ Fallidos                  │ 0     │
+│ Total Nuevas Marcaciones  │ 19    │
+└───────────────────────────┴───────┘
 ```
 
 ---
@@ -458,6 +646,21 @@ asistpy attendance evaluate --employee-pin "E101" --date 2026-09-02
 asistpy attendance evaluate --employee-pin "E101" --start-date 2026-09-01 --end-date 2026-09-15
 ```
 
+**Salida de ejemplo:**
+```text
+Evaluando jornada en lote para empleados activos al 2026-09-02...
+
+┌──────┬────────────┬────────────────┬──────────┬──────────┬───────────┬─────────┬─────────────┬─────────────┬──────────┐
+│ PIN  │   Fecha    │ Turno Esperado │ Entrada  │  Salida  │ Trabajado │ Retardo │ Salida Ant. │ Horas Extra │ Estado   │
+├──────┼────────────┼────────────────┼──────────┼──────────┼───────────┼─────────┼─────────────┼─────────────┼──────────┤
+│ E101 │ 2026-09-02 │ Matutino 8-16  │ 07:58:12 │ 16:05:30 │    8h  7m │      0m │          0m │          0m │ PRESENTE │
+│ E102 │ 2026-09-02 │ Matutino 8-16  │ 08:18:45 │ 16:01:10 │    7h 42m │     18m │          0m │          0m │ PRESENTE │
+│ E103 │ 2026-09-02 │ Matutino 8-16  │ --:--:-- │ --:--:-- │        0m │      0m │          0m │          0m │ FALTA    │
+└──────┴────────────┴────────────────┴──────────┴──────────┴───────────┴─────────┴─────────────┴─────────────┴──────────┘
+
+✔ Evaluación completada. Total registros evaluados: 3
+```
+
 ### 2. `asistpy attendance list` (Historial de Asistencia)
 ```bash
 # Listar las últimas 50 jornadas evaluadas
@@ -468,6 +671,19 @@ asistpy attendance list --employee-pin "E101"
 
 # Ver marcaciones CRUDAS del reloj biométrico (sin procesar)
 asistpy attendance list --raw --limit 20
+```
+
+**Salida de ejemplo:**
+```text
+┌──────┬────────────┬──────────┬──────────┬───────────┬─────────┬─────────────┬─────────────┬──────────┐
+│ PIN  │ Fecha      │ Entrada  │ Salida   │ Trabajado │ Retardo │ Salida Ant. │ Horas Extra │ Estado   │
+├──────┼────────────┼──────────┼──────────┼───────────┼─────────┼─────────────┼─────────────┼──────────┤
+│ E101 │ 2026-09-02 │ 07:58:12 │ 16:05:30 │    8h  7m │      0m │          0m │          0m │ PRESENTE │
+│ E102 │ 2026-09-02 │ 08:18:45 │ 16:01:10 │    7h 42m │     18m │          0m │          0m │ PRESENTE │
+│ E103 │ 2026-09-02 │ --:--:-- │ --:--:-- │        0m │      0m │          0m │          0m │ FALTA    │
+└──────┴────────────┴──────────┴──────────┴───────────┴─────────┴─────────────┴─────────────┴──────────┘
+
+Total jornadas evaluadas: 3
 ```
 
 ### 3. `asistpy attendance adjust` (Ajustes Manuales Auditados)
@@ -507,6 +723,24 @@ asistpy report summary \
   --output reportes/semana36.json
 ```
 
+**Salida de ejemplo:**
+```text
+┌──────┬────────────┬──────────┬──────────┬────────────────────┬─────────┬─────────────┬──────────┐
+│ PIN  │   Fecha    │ Entrada  │  Salida  │ Minutos Trabajados │ Retardo │ Horas Extra │ Estado   │
+├──────┼────────────┼──────────┼──────────┼────────────────────┼─────────┼─────────────┼──────────┤
+│ E101 │ 2026-09-02 │ 07:58:12 │ 16:05:30 │                487 │       0 │           0 │ present  │
+│ E102 │ 2026-09-02 │ 08:18:45 │ 16:01:10 │                462 │      18 │           0 │ present  │
+│ E103 │ 2026-09-02 │ --:--:-- │ --:--:-- │                  0 │       0 │           0 │ absent   │
+└──────┴────────────┴──────────┴──────────┴────────────────────┴─────────┴─────────────┴──────────┘
+
+Resumen Consolidado:
+  • Total registros evaluados: 3
+  • Total horas trabajadas: 15h 49m (949 min)
+  • Total minutos retardo: 18
+  • Total minutos horas extra: 0
+  • Total inasistencias/faltas: 1
+```
+
 ---
 
 ## 🗄 Gestión de Base de Datos (`asistpy db`)
@@ -515,6 +749,27 @@ asistpy report summary \
 Crea las tablas en la base de datos configurada (`branches`, `employees`, `shifts`, `devices`, `daily_attendances`, etc.):
 ```bash
 asistpy db init
+```
+
+**Salida de ejemplo:**
+```text
+Iniciando esquema de base de datos...
+✔ Tablas creadas/verificadas exitosamente en la base de datos:
+  • attendance_logs
+  • audit_logs
+  • branches
+  • daily_attendances
+  • departments
+  • devices
+  • employees
+  • justifications
+  • rotation_patterns
+  • schedule_assignments
+  • shifts
+  • sync_states
+  • work_sessions
+
+Total de tablas: 13
 ```
 
 ### 2. `asistpy db status`
@@ -539,6 +794,101 @@ Comprobando estado de la base de datos...
 │ Marcaciones Crudas       │ 12890                  │
 │ Jornadas Evaluadas       │ 320                    │
 └──────────────────────────┴────────────────────────┘
+```
+
+---
+
+## ⚙️ Demonio en Segundo Plano (`asistpy worker`)
+
+El comando `asistpy worker` convierte a AsistPy en un servicio autónomo y desatendido 24/7. Está diseñado para operar sin intervención manual en servidores dedicados, contenedores Docker y dispositivos móviles (Android/Termux).
+
+### Responsabilidades del Worker:
+1. **Sincronización Periódica**: Ejecuta automáticamente `SyncAllActiveDevices` cada $N$ segundos (configurable vía `--interval` o `SYNC_INTERVAL_SECONDS`, por defecto 300 s / 5 minutos).
+2. **Corte y Evaluación Nocturna**: Ejecuta automáticamente `ProcessDailyAttendanceBatch` a la hora configurada (vía `--nightly-time` o `NIGHTLY_PROCESSING_TIME`, por defecto `23:59`) para cerrar las asistencias de todo el personal activo. Si se programa durante la madrugada (ej. `00:30`), evalúa inteligentemente la jornada del día operativo anterior.
+3. **Apagado Limpio (Graceful Shutdown)**: Captura señales del sistema (`SIGINT`, `SIGTERM` y `SIGBREAK` en Windows). Si se recibe una señal durante la lectura de un reloj, garantiza la finalización del flujo, la reconexión/habilitación (`enable_device()`) y la desconexión limpia del socket TCP para asegurar que **ningún reloj físico quede bloqueado o deshabilitado**.
+
+### Sintaxis y Argumentos:
+```bash
+asistpy worker [OPCIONES]
+```
+
+| Opción | Variable de Entorno | Por Defecto | Descripción |
+| :--- | :--- | :---: | :--- |
+| `--interval <segundos>` | `SYNC_INTERVAL_SECONDS` | `300` | Segundos de espera entre cada ciclo de sincronización masiva. |
+| `--nightly-time <HH:MM>` | `NIGHTLY_PROCESSING_TIME` | `23:59` | Hora local para la evaluación nocturna de la jornada. |
+| `--branch-id <id>` | `SYNC_BRANCH_ID` | `None` | Restringe el worker a los relojes y empleados de una sucursal específica. |
+| `--stop-on-error` | `SYNC_STOP_ON_ERROR` | `false` | Detiene el worker ante una excepción en vez de registrar el fallo y continuar. |
+| `--run-nightly-on-start` | - | `false` | Ejecuta de inmediato el corte nocturno al iniciar el servicio. |
+| `--once` | - | `false` | Ejecuta un único ciclo de sincronización y finaliza (útil para pruebas o cron jobs). |
+
+### Ejemplos de Uso:
+
+#### 1. Iniciar worker continuo cada 5 minutos
+```bash
+asistpy worker
+```
+
+#### 2. Sincronización rápida cada 60 segundos y corte a las 22:30 hrs
+```bash
+asistpy worker --interval 60 --nightly-time 22:30
+```
+
+#### 3. Worker dedicado para una sucursal (ej. Sucursal Norte ID: 2)
+```bash
+asistpy worker --branch-id 2 --interval 120
+```
+
+#### 4. Ejecución en Android (Termux)
+```bash
+# En terminal Termux conectada a la red Wi-Fi de la empresa:
+asistpy worker --interval 300
+```
+
+**Salida de ejemplo durante la ejecución continua:**
+```text
+[2026-09-03 23:55:00] [asistpy-worker] === Servicio AsistPy Worker Iniciado ===
+[2026-09-03 23:55:00] [asistpy-worker] Configuración: intervalo=300s, hora_cierre=23:59
+[2026-09-03 23:55:00] [asistpy-worker] Esperando eventos (Presione Ctrl+C o envíe SIGTERM para detener)...
+[2026-09-03 23:55:01] [asistpy-worker] Iniciando ciclo de sincronización masiva...
+[2026-09-03 23:55:03] [asistpy-worker]   [✔] Dispositivo 'Reloj Entrada' (ID: 1): 12 nuevas marcaciones.
+[2026-09-03 23:55:04] [asistpy-worker]   [✔] Dispositivo 'Reloj Comedor' (ID: 2): 4 nuevas marcaciones.
+[2026-09-03 23:55:04] [asistpy-worker] Sincronización completada: 2/2 dispositivos OK, 0 fallidos. Total nuevas marcaciones: 16.
+[2026-09-03 23:59:00] [asistpy-worker] Iniciando procesamiento nocturno de jornada diaria para fecha operativa: 2026-09-03...
+[2026-09-03 23:59:02] [asistpy-worker] Procesamiento nocturno completado exitosamente: 45 empleados evaluados para 2026-09-03.
+```
+
+**Salida de ejemplo ante apagado limpio (SIGINT / SIGTERM / SIGBREAK):**
+```text
+[2026-09-04 00:15:30] [asistpy-worker] Recibida SIGTERM. Iniciando apagado limpio (graceful shutdown)...
+[2026-09-04 00:15:30] [asistpy-worker] Liberando conexión con reloj biométrico y asegurando estado habilitado...
+[2026-09-04 00:15:31] [asistpy-worker] === Servicio AsistPy Worker Detenido limpiamente ===
+[2026-09-04 00:15:31] [asistpy-worker] Garantía de integridad: Ningún reloj biométrico quedó deshabilitado.
+```
+
+---
+
+## 🐳 Despliegue con Docker y Docker Compose
+
+AsistPy incluye un `Dockerfile` multi-stage optimizado para producción y una configuración completa en `docker-compose.yml`.
+
+### Características de la Imagen:
+- **Multi-stage build**: Imagen final ligera basada en `python:3.11-slim` sin compiladores ni dependencias de desarrollo.
+- **Seguridad**: Ejecuta bajo un usuario sin privilegios `asistpy` (UID 1000).
+- **Graceful Shutdown**: Configura `STOPSIGNAL SIGTERM` para que `docker stop` o `docker compose down` permitan al worker liberar los sockets biométricos de forma limpia.
+- **Soporte de Bases de Datos**: Incluye controladores para PostgreSQL (`psycopg`), MySQL (`pymysql`) y SQLite.
+
+### Inicio Rápido con Docker Compose:
+El archivo `docker-compose.yml` preconfigura el servicio `asistpy-worker` vinculado a PostgreSQL con verificación de estado (`healthcheck`):
+
+```bash
+# 1. Iniciar PostgreSQL y el Worker en segundo plano:
+docker compose up -d
+
+# 2. Ver registros en tiempo real del worker:
+docker compose logs -f asistpy-worker
+
+# 3. Detener de forma limpia los servicios:
+docker compose stop
 ```
 
 ---

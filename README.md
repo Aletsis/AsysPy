@@ -5,8 +5,8 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Architecture: Hexagonal](https://img.shields.io/badge/architecture-Hexagonal%20%2F%20DDD-green.svg)](#arquitectura-del-sistema)
-[![Plataformas](https://img.shields.io/badge/plataformas-Web%20%7C%20CLI%20%7C%20Desktop%20%7C%20Mobile-informational.svg)](#-visión-multiplataforma-y-despliegue-modular)
-[![Tests](https://img.shields.io/badge/tests-136%20passed-brightgreen.svg)](#-pruebas-y-calidad)
+[![Plataformas](https://img.shields.io/badge/plataformas-Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Android%20(Termux)%20%7C%20Docker-informational.svg)](#-visión-multiplataforma-y-despliegue-modular)
+[![Tests](https://img.shields.io/badge/tests-148%20passed-brightgreen.svg)](#-pruebas-y-calidad)
 [![Linter](https://img.shields.io/badge/linter-ruff-black.svg)](#-pruebas-y-calidad)
 [![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue.svg)](#-pruebas-y-calidad)
 
@@ -24,6 +24,8 @@
 - [Instalación y Configuración](#-instalación-y-configuración)
 - [Instrucciones de Ejecución y Despliegue](#-instrucciones-de-ejecución-y-despliegue)
   - [Herramienta CLI Unificada (`asistpy`)](#3-herramienta-cli-unificada-asistpy)
+  - [Demonio / Worker 24/7 (`asistpy worker`)](#4-demonio--worker-en-segundo-plano-247-asistpy-worker)
+  - [Despliegue con Docker y Docker Compose](#5-despliegue-con-docker-y-docker-compose)
 - [Pruebas y Calidad](#-pruebas-y-calidad)
 - [Pendientes y Roadmap](#-pendientes-y-roadmap)
 - [Autor y Licencia](#-autor-y-licencia)
@@ -188,17 +190,19 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 | :--- | :---: | :--- |
 | **Dominio & Reglas de Negocio** | ✅ Completo | Modelos de asistencia, turnos, políticas, incidencias y auditoría. |
 | **Puertos (Contratos)** | ✅ Completo | Interfaces abstractas para todos los agregados del sistema. |
-| **Casos de Uso (Aplicación)** | ✅ Completo | Sincronización, emparejamiento, cálculo diario y ajustes con auditoría. |
-| **Adaptador Biométrico (pyzk)** | ✅ Completo | `ZkTcpReader` probado con manejo de timeouts y ciclo de vida de conexión. |
+| **Casos de Uso (Aplicación)** | ✅ Completo | Sincronización, emparejamiento, cálculo diario, ajustes con auditoría y demonio worker. |
+| **Demonio en Segundo Plano** | ✅ Completo | `asistpy worker` 24/7 con ciclo periódico, corte nocturno y graceful shutdown multiplataforma. |
+| **Adaptador Biométrico (pyzk)** | ✅ Completo | `ZkTcpReader` probado con manejo de timeouts, liberación de bloqueo y desconexión segura. |
 | **Adaptadores In-Memory** | ✅ Completo | Suite completa de repositorios en memoria para pruebas. |
 | **Adaptadores SQL (SQLAlchemy)** | ✅ Completo | Modelos, mappers y repositorios relacionales para SQLite, Postgres, MySQL y SQL Server. |
 | **Adaptador Base MongoDB** | 🔄 Fase 1 | Cliente de conexión base (`MongoClientWrapper`). Repositorios NoSQL programados. |
-| **Pruebas Automatizadas** | ✅ 136/136 | 136 pruebas unitarias e integrales pasando con 100% de éxito. |
-| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 148 archivos) limpios. |
-| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con CRUD completo para branch, department, employee, shift, schedule, device, más attendance, report y db. |
+| **Dockerización de Producción** | ✅ Completo | `Dockerfile` multi-stage optimizado y servicio `asistpy-worker` en `docker-compose.yml`. |
+| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con CRUD completo (branch, department, employee, shift, schedule, device), asistencia, reportes, DB y worker. |
+| **Pruebas Automatizadas** | ✅ 148/148 | 148 pruebas unitarias e integrales pasando con 100% de éxito. |
+| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 130 archivos fuente) limpios. |
 | **Capa Web / API REST** | ⏳ Planificado | En diseño de endpoints bajo FastAPI. |
 | **Capa Desktop GUI** | ⏳ Planificado | Planeada con PySide6 / Flet con SQLite local. |
-| **Capa Mobile (Android/iOS)** | ⏳ Planificado | Planeada para modo quiosco y supervisores de campo. |
+| **Capa Mobile (Android/iOS)** | ⏳ Planificado | Planeada para modo quiosco y supervisores de campo (Termux ya soportado vía CLI/Worker). |
 
 ---
 
@@ -206,12 +210,14 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 
 ```text
 AsistPy/
+├── .dockerignore                     # Reglas de exclusión para la compilación de imágenes Docker
 ├── .env.example                     # Plantilla de configuración de variables de entorno
 ├── .gitattributes                  # Estandarización de saltos de línea (LF) y tipos de archivo
 ├── .gitignore                      # Reglas de exclusión de Git (venv, cachés, bases de datos)
+├── Dockerfile                      # Imagen multi-stage ligera de producción (runtime asistpy worker)
 ├── DOCS/                           # Manuales y documentación de usuario
-│   └── CLI_MANUAL.md               # Manual completo de la CLI unificada asistpy
-├── docker-compose.yml              # Servicios para desarrollo local (Postgres, MySQL, Mongo)
+│   └── CLI_MANUAL.md               # Manual completo de la CLI unificada asistpy y worker
+├── docker-compose.yml              # Orquestación de servicios (asistpy-worker, Postgres, MySQL, Mongo)
 ├── LICENSE                         # Licencia de código abierto MIT
 ├── migrations/                     # Directorio reservado para migraciones con Alembic
 │   └── .gitkeep
@@ -223,16 +229,17 @@ AsistPy/
 ├── src/
 │   └── attendance/
 │       ├── adapters/               # Adaptadores externos (Hardware, SQL, Mongo, Memoria, CLI)
-│       │   ├── cli/                # Adaptador Driving CLI (asistpy) con subcomandos y tablas
+│       │   ├── cli/                # Adaptador Driving CLI (asistpy) con subcomandos, tablas y worker
 │       │   ├── memory/             # Repositorios en memoria
 │       │   ├── persistence/        # Persistencia: factory, SQL (modelos/repos) y MongoDB
 │       │   └── zk_tcp/             # Cliente de conexión TCP para relojes ZKTeco
 │       ├── application/            # Casos de uso de la aplicación
 │       │   ├── adjustment/         # Ajuste manual de marcaciones con auditoría
 │       │   ├── attendance/         # Emparejamiento y evaluación diaria
-│       │   ├── device/             # Sincronización incremental de registros
+│       │   ├── device/             # Sincronización incremental de registros y masiva
 │       │   ├── incidence/          # Justificaciones e incidencias
-│       │   └── schedule/           # Resolución y asignación de turnos
+│       │   ├── schedule/           # Resolución y asignación de turnos
+│       │   └── worker/             # Demonio AttendanceWorker con graceful shutdown y corte diario
 │       ├── domain/                 # Núcleo del dominio y reglas de negocio puras
 │       │   ├── attendance/         # Entidades de asistencia, sesiones, estados
 │       │   ├── audit/              # Entidades y registros de auditoría
@@ -246,7 +253,7 @@ AsistPy/
 │       └── cli.py                  # Atajo directo para python -m attendance.cli
 └── tests/
     ├── integration/                # Pruebas de integración con factorías, BD SQL y comandos CLI
-    └── unit/                       # Pruebas unitarias de dominio, casos de uso, formatters y parser CLI
+    └── unit/                       # Pruebas unitarias de dominio, casos de uso, formatters, parser y worker
 ```
 
 ---
@@ -348,9 +355,44 @@ asistpy attendance evaluate --date 2026-09-02
 asistpy report summary --start-date 2026-09-01 --end-date 2026-09-07 --format csv --output reportes/semana.csv
 ```
 
-> 📘 Para consultar todos los subcomandos, ejemplos y recetas de automatización con `cron`, revisa el [Manual de la CLI (DOCS/CLI_MANUAL.md)](DOCS/CLI_MANUAL.md).
+### 4. Demonio / Worker en Segundo Plano 24/7 (`asistpy worker`)
+Para operación desatendida continua sin intervención humana, AsistPy provee un worker que realiza la sincronización masiva periódica y el corte nocturno de asistencia:
 
-### 4. Inicialización Programática de Persistencia
+```bash
+# Iniciar worker continuo cada 5 minutos (corte diario a las 23:59 por defecto)
+asistpy worker
+
+# Intervalo personalizado de 60 segundos y corte nocturno a las 22:30
+asistpy worker --interval 60 --nightly-time 22:30
+
+# Filtrar worker únicamente para una sucursal específica (ID: 2)
+asistpy worker --branch-id 2 --interval 180
+
+# Ejecutar una única ronda de sincronización y finalizar (ideal para cron jobs)
+asistpy worker --once
+```
+
+**Garantías y Compatibilidad Multiplataforma:**
+- **Linux & macOS**: Captura señales `SIGINT` (Ctrl+C) y `SIGTERM` (detención de sistema o contenedor).
+- **Windows**: Captura `SIGINT` y `SIGBREAK` (Ctrl+Break / cierre de consola).
+- **Android (Termux)**: Ejecución nativa directa con Python sobre Wi-Fi/VPN conectando a los relojes biométricos.
+- **Apagado Limpio (Graceful Shutdown)**: El worker monitorea cualquier conexión activa con lectores biométricos (`ZkTcpReader`). Si se solicita la detención del proceso, asegura la reactivación del reloj (`enable_device()`) y el cierre ordenado del socket TCP para garantizar que ningún reloj físico quede bloqueado o deshabilitado.
+
+### 5. Despliegue con Docker y Docker Compose
+AsistPy incluye un `Dockerfile` multi-stage ligero para entornos de producción y una configuración completa en `docker-compose.yml`:
+
+```bash
+# Iniciar PostgreSQL y el Worker en segundo plano:
+docker compose up -d
+
+# Consultar los registros en tiempo real del worker:
+docker compose logs -f asistpy-worker
+
+# Detener los servicios de forma ordenada y limpia:
+docker compose stop
+```
+
+### 6. Inicialización Programática de Persistencia
 Para inicializar el conjunto completo de repositorios desde código Python:
 ```python
 from attendance.adapters.persistence.factory import PersistenceFactory
@@ -377,7 +419,7 @@ El proyecto mantiene un estándar riguroso de calidad de código y cobertura:
 ```bash
 poetry run pytest -v
 ```
-Resultado esperado: **136 tests pasando**.
+Resultado esperado: **148 tests pasando**.
 
 ### Análisis de Estilo y Linting (Ruff)
 ```bash
@@ -386,20 +428,20 @@ poetry run ruff check .
 
 ### Análisis Estático de Tipado (Mypy)
 ```bash
-poetry run mypy src tests
+poetry run mypy src
 ```
-Resultado esperado: **Success: no issues found in 148 source files**.
+Resultado esperado: **Success: no issues found in 130 source files**.
 
 ---
 
 ## 🗺 Pendientes y Roadmap
 
-El núcleo del dominio, los casos de uso, la capa relacional y la CLI unificada están completamente operativos. Las siguientes fases comprenden:
+El núcleo del dominio, los casos de uso, la capa relacional, el demonio worker 24/7 y la CLI unificada están completamente operativos. Las siguientes fases comprenden:
 
 ### Fase 1: Capa de Servicio Web & API Centralizada
 - [ ] **API REST / FastAPI**: Endpoints para consulta de asistencias, reportes, justificación de incidencias y administración de turnos.
-- [ ] **Daemon / Worker de Sincronización en Segundo Plano**: Tarea periódica automatizada (cron/worker) para consultar relojes en segundo plano y registrar logs de forma desatendida.
-- [ ] **Dockerización de Producción**: Imagen Docker ligera y configuración para orquestación en la nube.
+- [x] **Daemon / Worker de Sincronización en Segundo Plano**: Demonio `asistpy worker` 24/7 con ciclo periódico, corte nocturno automático y apagado limpio.
+- [x] **Dockerización de Producción**: Imagen Docker multi-stage ligera y servicio `asistpy-worker` en `docker-compose.yml`.
 
 ### Fase 2: Herramienta de Línea de Comandos (CLI)
 - [x] **CLI Unificada (`asistpy`) con CRUD Completo**:

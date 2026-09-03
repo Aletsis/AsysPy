@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+dist/
+build/
+*.egg-info/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE & Editores
+.vscode/
+.idea/
+
+# Caches y pruebas
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+tests/
+DOCS/
+scripts/
+
+# Bases de datos y archivos locales
+*.db
+*.sqlite3
+asistpy.db
+.env
