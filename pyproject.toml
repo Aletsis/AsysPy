@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cli = ["sqlalchemy (>=2.0.0,<3.0.0)"]
 sqlite = ["sqlalchemy (>=2.0.0,<3.0.0)"]
 postgres = ["sqlalchemy (>=2.0.0,<3.0.0)", "psycopg[binary] (>=3.1.0)"]
 mysql = ["sqlalchemy (>=2.0.0,<3.0.0)", "pymysql (>=1.1.0)"]
@@ -26,6 +27,9 @@ all = [
     "pyodbc (>=5.0.0)",
     "pymongo (>=4.6.0)",
 ]
+
+[project.scripts]
+asistpy = "attendance.adapters.cli.main:main"
 
 [tool.poetry]
 packages = [{include = "attendance", from = "src"}]

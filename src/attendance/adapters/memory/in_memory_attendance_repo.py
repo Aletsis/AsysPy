@@ -70,7 +70,10 @@ class InMemoryAttendanceRepository(AttendanceRepository):
 
     def update_log(self, log: AttendanceLog) -> AttendanceLog:
         if log.id is None:
-            log.id = self._next_id
-            self._next_id += 1
-        self._logs[log.id] = log
+            self.save_raw_log(log)
+        else:
+            self._logs[log.id] = log
         return log
+
+    def list_all(self) -> list[AttendanceLog]:
+        return sorted(self._logs.values(), key=lambda item: item.timestamp)

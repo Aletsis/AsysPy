@@ -47,3 +47,6 @@ class InMemoryDailyAttendanceRepository(DailyAttendanceRepository):
         return [
             att for (pin, d), att in self._records.items() if d == target_date
         ]
+
+    def list_all(self) -> list[DailyAttendance]:
+        return sorted(self._records.values(), key=lambda a: (a.date, a.employee_pin))

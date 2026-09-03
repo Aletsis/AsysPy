@@ -145,3 +145,13 @@ class SqlDailyAttendanceRepository(DailyAttendanceRepository):
             stmt = stmt.order_by(DailyAttendanceModel.employee_pin.asc())
             models = session.scalars(stmt).all()
             return [daily_attendance_to_domain(m) for m in models]
+
+    def list_all(self) -> list[DailyAttendance]:
+        with self.session_factory() as session:
+            stmt = (
+                select(DailyAttendanceModel)
+                .options(selectinload(DailyAttendanceModel.sessions))
+                .order_by(DailyAttendanceModel.date.asc(), DailyAttendanceModel.employee_pin.asc())
+            )
+            models = session.scalars(stmt).all()
+            return [daily_attendance_to_domain(m) for m in models]

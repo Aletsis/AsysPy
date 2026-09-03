@@ -112,3 +112,9 @@ class SqlAttendanceRepository(AttendanceRepository):
                     session.add(new_model)
                     session.commit()
             return log
+
+    def list_all(self) -> list[AttendanceLog]:
+        with self.session_factory() as session:
+            stmt = select(AttendanceLogModel).order_by(AttendanceLogModel.timestamp.asc())
+            models = session.scalars(stmt).all()
+            return [attendance_log_to_domain(m) for m in models]

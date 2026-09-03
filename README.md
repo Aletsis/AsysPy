@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Architecture: Hexagonal](https://img.shields.io/badge/architecture-Hexagonal%20%2F%20DDD-green.svg)](#arquitectura-del-sistema)
 [![Plataformas](https://img.shields.io/badge/plataformas-Web%20%7C%20CLI%20%7C%20Desktop%20%7C%20Mobile-informational.svg)](#-visión-multiplataforma-y-despliegue-modular)
-[![Tests](https://img.shields.io/badge/tests-89%20passed-brightgreen.svg)](#-pruebas-y-calidad)
+[![Tests](https://img.shields.io/badge/tests-124%20passed-brightgreen.svg)](#-pruebas-y-calidad)
 [![Linter](https://img.shields.io/badge/linter-ruff-black.svg)](#-pruebas-y-calidad)
 [![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue.svg)](#-pruebas-y-calidad)
 
@@ -23,6 +23,7 @@
 - [Requisitos Previos](#-requisitos-previos)
 - [Instalación y Configuración](#-instalación-y-configuración)
 - [Instrucciones de Ejecución y Despliegue](#-instrucciones-de-ejecución-y-despliegue)
+  - [Herramienta CLI Unificada (`asistpy`)](#3-herramienta-cli-unificada-asistpy)
 - [Pruebas y Calidad](#-pruebas-y-calidad)
 - [Pendientes y Roadmap](#-pendientes-y-roadmap)
 - [Autor y Licencia](#-autor-y-licencia)
@@ -192,10 +193,10 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 | **Adaptadores In-Memory** | ✅ Completo | Suite completa de repositorios en memoria para pruebas. |
 | **Adaptadores SQL (SQLAlchemy)** | ✅ Completo | Modelos, mappers y repositorios relacionales para SQLite, Postgres, MySQL y SQL Server. |
 | **Adaptador Base MongoDB** | 🔄 Fase 1 | Cliente de conexión base (`MongoClientWrapper`). Repositorios NoSQL programados. |
-| **Pruebas Automatizadas** | ✅ 89/89 | 89 pruebas unitarias e integrales pasando con 100% de éxito. |
-| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 93 archivos) limpios. |
+| **Pruebas Automatizadas** | ✅ 124/124 | 124 pruebas unitarias e integrales pasando con 100% de éxito. |
+| **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 133 archivos) limpios. |
+| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con subcomandos `device`, `attendance`, `report` y `db`. |
 | **Capa Web / API REST** | ⏳ Planificado | En diseño de endpoints bajo FastAPI. |
-| **Herramienta CLI** | ⏳ Planificado | Planeada para administración, tareas cron y reportes en consola. |
 | **Capa Desktop GUI** | ⏳ Planificado | Planeada con PySide6 / Flet con SQLite local. |
 | **Capa Mobile (Android/iOS)** | ⏳ Planificado | Planeada para modo quiosco y supervisores de campo. |
 
@@ -208,6 +209,8 @@ AsistPy/
 ├── .env.example                     # Plantilla de configuración de variables de entorno
 ├── .gitattributes                  # Estandarización de saltos de línea (LF) y tipos de archivo
 ├── .gitignore                      # Reglas de exclusión de Git (venv, cachés, bases de datos)
+├── DOCS/                           # Manuales y documentación de usuario
+│   └── CLI_MANUAL.md               # Manual completo de la CLI unificada asistpy
 ├── docker-compose.yml              # Servicios para desarrollo local (Postgres, MySQL, Mongo)
 ├── LICENSE                         # Licencia de código abierto MIT
 ├── migrations/                     # Directorio reservado para migraciones con Alembic
@@ -219,7 +222,8 @@ AsistPy/
 │   └── probe_device.py             # Script de diagnóstico para pruebas directas con el reloj
 ├── src/
 │   └── attendance/
-│       ├── adapters/               # Adaptadores externos (Hardware, SQL, Mongo, Memoria)
+│       ├── adapters/               # Adaptadores externos (Hardware, SQL, Mongo, Memoria, CLI)
+│       │   ├── cli/                # Adaptador Driving CLI (asistpy) con subcomandos y tablas
 │       │   ├── memory/             # Repositorios en memoria
 │       │   ├── persistence/        # Persistencia: factory, SQL (modelos/repos) y MongoDB
 │       │   └── zk_tcp/             # Cliente de conexión TCP para relojes ZKTeco
@@ -238,10 +242,11 @@ AsistPy/
 │       │   ├── organization/       # Empleados, sucursales, departamentos
 │       │   ├── policy/             # Políticas de tolerancia y horas extras
 │       │   └── schedule/           # Turnos, asignaciones, rotaciones y excepciones
-│       └── ports/                  # Puertos abstractos (interfaces)
+│       ├── ports/                  # Puertos abstractos (interfaces)
+│       └── cli.py                  # Atajo directo para python -m attendance.cli
 └── tests/
-    ├── integration/                # Pruebas de integración con factorías y bases de datos SQL
-    └── unit/                       # Pruebas unitarias de casos de uso y lógica de dominio
+    ├── integration/                # Pruebas de integración con factorías, BD SQL y comandos CLI
+    └── unit/                       # Pruebas unitarias de dominio, casos de uso, formatters y parser CLI
 ```
 
 ---
@@ -323,7 +328,29 @@ poetry run python scripts/probe_device.py
 > ZK_DEVICE_IP="192.168.1.200" ZK_DEVICE_PORT="4370" poetry run python scripts/probe_device.py
 > ```
 
-### 3. Inicialización Programática de Persistencia
+### 3. Herramienta CLI Unificada (`asistpy`)
+AsistPy incluye una consola CLI completa para administrar el sistema, diagnosticar relojes, sincronizar marcaciones y generar reportes sin necesidad de interfaces gráficas ni servidores web:
+
+```bash
+# Diagnosticar estado y conectividad de la base de datos
+asistpy db status
+
+# Sondear conectividad física con un reloj ZKTeco en red
+asistpy device probe --ip 192.168.0.233 --port 4370
+
+# Sincronización incremental de todos los relojes activos del catálogo
+asistpy device sync
+
+# Evaluación de jornada de asistencia para todos los empleados activos
+asistpy attendance evaluate --date 2026-09-02
+
+# Exportar reporte consolidado de asistencia a formato CSV
+asistpy report summary --start-date 2026-09-01 --end-date 2026-09-07 --format csv --output reportes/semana.csv
+```
+
+> 📘 Para consultar todos los subcomandos, ejemplos y recetas de automatización con `cron`, revisa el [Manual de la CLI (DOCS/CLI_MANUAL.md)](DOCS/CLI_MANUAL.md).
+
+### 4. Inicialización Programática de Persistencia
 Para inicializar el conjunto completo de repositorios desde código Python:
 ```python
 from attendance.adapters.persistence.factory import PersistenceFactory
@@ -350,7 +377,7 @@ El proyecto mantiene un estándar riguroso de calidad de código y cobertura:
 ```bash
 poetry run pytest -v
 ```
-Resultado esperado: **89 tests pasando**.
+Resultado esperado: **124 tests pasando**.
 
 ### Análisis de Estilo y Linting (Ruff)
 ```bash
@@ -359,15 +386,15 @@ poetry run ruff check .
 
 ### Análisis Estático de Tipado (Mypy)
 ```bash
-poetry run mypy src
+poetry run mypy src tests
 ```
-Resultado esperado: **Success: no issues found in 93 source files**.
+Resultado esperado: **Success: no issues found in 133 source files**.
 
 ---
 
 ## 🗺 Pendientes y Roadmap
 
-El núcleo del dominio, los casos de uso y la capa relacional están completamente operativos. Las siguientes fases comprenden:
+El núcleo del dominio, los casos de uso, la capa relacional y la CLI unificada están completamente operativos. Las siguientes fases comprenden:
 
 ### Fase 1: Capa de Servicio Web & API Centralizada
 - [ ] **API REST / FastAPI**: Endpoints para consulta de asistencias, reportes, justificación de incidencias y administración de turnos.
@@ -375,12 +402,12 @@ El núcleo del dominio, los casos de uso y la capa relacional están completamen
 - [ ] **Dockerización de Producción**: Imagen Docker ligera y configuración para orquestación en la nube.
 
 ### Fase 2: Herramienta de Línea de Comandos (CLI)
-- [ ] **CLI Unificada (`asistpy`)**:
-  - `asistpy device probe / sync`: Sondeo y sincronización forzada desde terminal.
-  - `asistpy attendance evaluate`: Evaluación y cierre de asistencias por fecha o empleado.
-  - `asistpy report`: Generación de reportes rápidos tabulares en consola o volcados a CSV/JSON.
-  - `asistpy db init / migrate`: Gestión y verificación de esquemas de base de datos.
-- [ ] **Extra de Dependencias `[cli]`**: Empaquetado ligero para terminal sin dependencias de GUI ni servidor web.
+- [x] **CLI Unificada (`asistpy`)**:
+  - `asistpy device probe / sync / list`: Sondeo, catálogo y sincronización incremental desde terminal.
+  - `asistpy attendance evaluate / list / adjust`: Evaluación de jornadas, consulta y ajustes manuales con auditoría inmutable.
+  - `asistpy report summary`: Generación de reportes tabulares en consola o volcados a CSV/JSON.
+  - `asistpy db init / status`: Inicialización, creación de esquema y diagnóstico de bases de datos.
+- [x] **Extra de Dependencias `[cli]`**: Empaquetado ligero para terminal y manual de uso detallado en `DOCS/CLI_MANUAL.md`.
 
 ### Fase 3: Aplicación de Escritorio Multiplataforma (Windows, macOS, Linux)
 - [ ] **Interfaz Gráfica de Escritorio**: Implementación de interfaz ligera (PySide6 / Flet) para casetas de control, estaciones de RRHH locales y administradores de sucursal.
