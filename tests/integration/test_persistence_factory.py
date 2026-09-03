@@ -4,10 +4,18 @@ from datetime import date, datetime, time
 
 import pytest
 
-from attendance.adapters.memory import InMemoryAttendanceRepository
+from attendance.adapters.memory import (
+    InMemoryAttendanceRepository,
+    InMemoryDeviceRepository,
+)
 from attendance.adapters.persistence.factory import PersistenceFactory
-from attendance.adapters.persistence.sql.repositories import SqlAttendanceRepository
+from attendance.adapters.persistence.sql.repositories import (
+    SqlAttendanceRepository,
+    SqlDeviceRepository,
+)
 from attendance.application.attendance.process_daily_attendance import ProcessDailyAttendance
+from attendance.application.device import sync_all_active_devices
+from attendance.domain.device.device import Device
 from attendance.domain.device.enums import AuthMethod, LogStatus
 from attendance.domain.device.log import AttendanceLog
 from attendance.domain.organization.employee import Employee, Sex
@@ -19,6 +27,7 @@ from attendance.domain.schedule.shift import ShiftDefinition, ShiftSegment
 def test_factory_creates_memory_bundle() -> None:
     bundle = PersistenceFactory.create_bundle("memory")
     assert isinstance(bundle.attendance_repo, InMemoryAttendanceRepository)
+    assert isinstance(bundle.device_repo, InMemoryDeviceRepository)
     assert bundle.database is None
 
 
@@ -27,7 +36,9 @@ def test_factory_creates_sqlite_bundle() -> None:
         "sqlite", connection_string="sqlite:///:memory:", init_tables=True
     )
     assert isinstance(bundle.attendance_repo, SqlAttendanceRepository)
+    assert isinstance(bundle.device_repo, SqlDeviceRepository)
     assert bundle.database is not None
+
 
 
 def test_factory_missing_optional_driver_raises_helpful_error() -> None:
@@ -134,3 +145,86 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
     # 7. Verificar que las marcaciones crudas fueron marcadas como procesadas en SQL
     unprocessed = bundle.attendance_repo.get_unprocessed_logs()
     assert len(unprocessed) == 0
+
+
+class FakeReader:
+    def __init__(self, logs: list[AttendanceLog]) -> None:
+        self.logs = logs
+
+    def connect(self, device: Device) -> None:
+        pass
+
+    def disconnect(self) -> None:
+        pass
+
+    def get_raw_logs(self, device: Device) -> list[AttendanceLog]:
+        return self.logs
+
+    def get_device_info(self, device: Device) -> dict:
+        return {}
+
+
+def test_end_to_end_device_sync_with_sql_bundle() -> None:
+    """Valida que SyncAllActiveDevices funcione sobre un bundle de SQLite."""
+    bundle = PersistenceFactory.create_bundle(
+        "sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
+
+    # 1. Registrar dispositivo en SQL
+    dev = Device(
+        id=None,
+        name="Reloj Puerta Principal",
+        branch_id=1,
+        serial_number="ZK-TEST-001",
+        ip_address="192.168.1.200",
+        active=True,
+    )
+    saved_dev = bundle.device_repo.save(dev)
+    assert saved_dev.id is not None
+    dev_id = saved_dev.id
+
+    # 2. Preparar marcaciones simuladas
+    logs = [
+        AttendanceLog(
+            id=None,
+            record_uid=1,
+            employee_pin="EMP999",
+            device_id=dev_id,
+            timestamp=datetime(2026, 3, 1, 8, 0),
+            auth_method=AuthMethod.FINGERPRINT,
+            processing_status=LogStatus.RAW,
+        ),
+        AttendanceLog(
+            id=None,
+            record_uid=2,
+            employee_pin="EMP999",
+            device_id=dev_id,
+            timestamp=datetime(2026, 3, 1, 17, 0),
+            auth_method=AuthMethod.FINGERPRINT,
+            processing_status=LogStatus.RAW,
+        ),
+    ]
+    reader = FakeReader(logs)
+
+    # 3. Ejecutar orquestador SyncAllActiveDevices
+    sync_result = sync_all_active_devices(
+        device_registry=bundle.device_repo,
+        attendance_repo=bundle.attendance_repo,
+        sync_state_repo=bundle.sync_state_repo,
+        reader=reader,
+    )
+
+    assert sync_result.total_devices == 1
+    assert sync_result.successful_devices == 1
+    assert sync_result.total_synced_logs == 2
+
+    # 4. Verificar marcaciones crudas guardadas en la base de datos SQL
+    unprocessed = bundle.attendance_repo.get_unprocessed_logs()
+    assert len(unprocessed) == 2
+    assert unprocessed[0].employee_pin == "EMP999"
+    assert unprocessed[1].record_uid == 2
+
+    # 5. Verificar marca de agua actualizada en SQL
+    last_uid = bundle.sync_state_repo.get_last_synced_uid(dev_id)
+    assert last_uid == 2
+

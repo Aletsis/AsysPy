@@ -11,6 +11,7 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlAttendanceRepository,
     SqlAuditLogRepository,
     SqlDailyAttendanceRepository,
+    SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
     SqlScheduleAssignmentRepository,
@@ -20,7 +21,8 @@ from attendance.domain.attendance.daily_attendance import DailyAttendance
 from attendance.domain.attendance.enums import AttendanceStatus, SessionStatus, SessionType
 from attendance.domain.attendance.session import WorkSession
 from attendance.domain.audit.audit_log import AuditAction, AuditLog
-from attendance.domain.device.enums import AuthMethod, LogStatus
+from attendance.domain.device.device import Device, DeviceCapabilities
+from attendance.domain.device.enums import AuthMethod, DeviceProtocol, LogStatus
 from attendance.domain.device.log import AttendanceLog
 from attendance.domain.incidence.enums import JustificationStatus, JustificationType
 from attendance.domain.incidence.justification import Justification
@@ -286,3 +288,91 @@ def test_sql_sync_state_repository(session_factory: sessionmaker[Session]) -> No
 
     repo.update_last_synced_uid(1, 480)
     assert repo.get_last_synced_uid(1) == 480
+
+
+# ============================================================================
+# Test SqlDeviceRepository
+# ============================================================================
+def test_sql_device_repository(session_factory: sessionmaker[Session]) -> None:
+    repo = SqlDeviceRepository(session_factory)
+
+    now = datetime(2026, 3, 1, 12, 0, 0)
+    caps = DeviceCapabilities(
+        firmware_version="v8.0.1",
+        platform="Linux/ARM",
+        manufacturer_device_name="ZKTeco MB360",
+        mac_address="00:11:22:33:44:55",
+        last_read_at=now,
+    )
+
+    dev1 = Device(
+        id=None,
+        name="Reloj Entrada Principal",
+        branch_id=10,
+        protocol=DeviceProtocol.TCP_4370,
+        serial_number="ZK-SN-001",
+        ip_address="192.168.1.201",
+        port=4370,
+        location_label="Recepción Edificio A",
+        capabilities=caps,
+        active=True,
+    )
+
+    # 1. Guardar y verificar autoincremento de ID
+    saved1 = repo.save(dev1)
+    assert saved1.id is not None
+    assert saved1.id > 0
+    dev1_id = saved1.id
+
+    # 2. Consultar por ID y validar capabilities JSON
+    fetched = repo.get_by_id(dev1_id)
+    assert fetched is not None
+    assert fetched.name == "Reloj Entrada Principal"
+    assert fetched.serial_number == "ZK-SN-001"
+    assert fetched.capabilities is not None
+    assert fetched.capabilities.firmware_version == "v8.0.1"
+    assert fetched.capabilities.last_read_at == now
+    assert fetched.capabilities.mac_address == "00:11:22:33:44:55"
+
+    # 3. Consultar por serial_number
+    by_serial = repo.get_by_serial_number("ZK-SN-001")
+    assert by_serial is not None
+    assert by_serial.id == dev1_id
+
+    assert repo.get_by_serial_number("NO_EXISTE") is None
+
+    # 4. Guardar segundo dispositivo (inactivo) en otra sucursal
+    dev2 = Device(
+        id=None,
+        name="Reloj Almacén",
+        branch_id=20,
+        serial_number="ZK-SN-002",
+        active=False,
+    )
+    saved2 = repo.save(dev2)
+    assert saved2.id is not None
+
+    # 5. Listar activos
+    active_all = repo.get_active_devices()
+    assert len(active_all) == 1
+    assert active_all[0].id == dev1_id
+
+    # Filtrar activos por sucursal
+    assert len(repo.get_active_devices(branch_id=10)) == 1
+    assert len(repo.get_active_devices(branch_id=20)) == 0
+
+    # 6. Listar todos
+    assert len(repo.list_all()) == 2
+    assert len(repo.list_all(branch_id=20)) == 1
+
+    # 7. Actualización (Upsert)
+    fetched.name = "Reloj Entrada Modificado"
+    fetched.active = False
+    repo.save(fetched)
+
+    updated = repo.get_by_id(dev1_id)
+    assert updated is not None
+    assert updated.name == "Reloj Entrada Modificado"
+    assert updated.active is False
+    assert len(repo.get_active_devices()) == 0
+

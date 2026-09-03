@@ -2,10 +2,13 @@
 
 from .device_reader import DeviceReader
 from .device_registry import DeviceRegistry
+from .device_repository import DeviceRepository
 from .sync_state_repository import SyncStateRepository
 
 __all__ = [
     "DeviceReader",
     "DeviceRegistry",
+    "DeviceRepository",
     "SyncStateRepository",
 ]
+

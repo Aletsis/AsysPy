@@ -11,6 +11,9 @@ def sync_device_logs(
     attendance_repo: AttendanceRepository,
     sync_state_repo: SyncStateRepository,
 ) -> int:
+    if device.id is None:
+        raise ValueError("El dispositivo debe contar con un identificador (id) para sincronizar.")
+
     last_synced_uid = sync_state_repo.get_last_synced_uid(device.id)
 
     reader.connect(device)

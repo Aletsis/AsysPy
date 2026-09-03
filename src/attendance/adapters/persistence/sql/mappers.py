@@ -3,13 +3,14 @@
 Garantiza que el Dominio permanezca completamente desacoplado de la base de datos.
 """
 
-from datetime import time
+from datetime import datetime, time
 from typing import Any
 
 from attendance.adapters.persistence.sql.models import (
     AttendanceLogModel,
     AuditLogModel,
     DailyAttendanceModel,
+    DeviceModel,
     EmployeeModel,
     JustificationModel,
     ScheduleAssignmentModel,
@@ -19,7 +20,8 @@ from attendance.domain.attendance.daily_attendance import DailyAttendance
 from attendance.domain.attendance.enums import AttendanceStatus, SessionStatus, SessionType
 from attendance.domain.attendance.session import WorkSession
 from attendance.domain.audit.audit_log import AuditAction, AuditLog
-from attendance.domain.device.enums import AuthMethod, LogStatus
+from attendance.domain.device.device import Device, DeviceCapabilities
+from attendance.domain.device.enums import AuthMethod, DeviceProtocol, LogStatus
 from attendance.domain.device.log import AttendanceLog
 from attendance.domain.incidence.enums import JustificationStatus, JustificationType
 from attendance.domain.incidence.justification import Justification
@@ -356,3 +358,75 @@ def schedule_assignment_to_model(
         rotation_pattern_id=entity.rotation_pattern_id,
         expected_min_sessions=entity.expected_min_sessions,
     )
+
+
+# ============================================================================
+# Device Mappers
+# ============================================================================
+def capabilities_to_dict(capabilities: DeviceCapabilities | None) -> dict[str, Any] | None:
+    """Serializa DeviceCapabilities a un diccionario JSON."""
+    if capabilities is None:
+        return None
+    return {
+        "firmware_version": capabilities.firmware_version,
+        "platform": capabilities.platform,
+        "manufacturer_device_name": capabilities.manufacturer_device_name,
+        "face_algorithm_version": capabilities.face_algorithm_version,
+        "fingerprint_algorithm_version": capabilities.fingerprint_algorithm_version,
+        "mac_address": capabilities.mac_address,
+        "pin_width": capabilities.pin_width,
+        "last_read_at": capabilities.last_read_at.isoformat() if capabilities.last_read_at else None,
+    }
+
+
+def capabilities_from_dict(data: dict[str, Any] | None) -> DeviceCapabilities | None:
+    """Deserializa un diccionario JSON a DeviceCapabilities."""
+    if not data:
+        return None
+    last_read = (
+        datetime.fromisoformat(data["last_read_at"]) if data.get("last_read_at") else None
+    )
+    return DeviceCapabilities(
+        firmware_version=data.get("firmware_version"),
+        platform=data.get("platform"),
+        manufacturer_device_name=data.get("manufacturer_device_name"),
+        face_algorithm_version=data.get("face_algorithm_version"),
+        fingerprint_algorithm_version=data.get("fingerprint_algorithm_version"),
+        mac_address=data.get("mac_address"),
+        pin_width=data.get("pin_width"),
+        last_read_at=last_read,
+    )
+
+
+def device_to_domain(model: DeviceModel) -> Device:
+    """Convierte un DeviceModel a la entidad Device del dominio."""
+    protocol = DeviceProtocol(model.protocol) if model.protocol else DeviceProtocol.TCP_4370
+    return Device(
+        id=model.id,
+        name=model.name,
+        branch_id=model.branch_id,
+        protocol=protocol,
+        serial_number=model.serial_number or "",
+        ip_address=model.ip_address,
+        port=model.port,
+        location_label=model.location_label,
+        capabilities=capabilities_from_dict(model.capabilities),
+        active=model.active,
+    )
+
+
+def device_to_model(entity: Device) -> DeviceModel:
+    """Convierte una entidad Device a DeviceModel."""
+    return DeviceModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        branch_id=entity.branch_id,
+        protocol=entity.protocol.value if entity.protocol else DeviceProtocol.TCP_4370.value,
+        serial_number=entity.serial_number or "",
+        ip_address=entity.ip_address,
+        port=entity.port,
+        location_label=entity.location_label,
+        capabilities=capabilities_to_dict(entity.capabilities),
+        active=entity.active,
+    )
+

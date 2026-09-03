@@ -14,6 +14,7 @@ from .audit import (
 from .device import (
     DeviceReader,
     DeviceRegistry,
+    DeviceRepository,
     SyncStateRepository,
 )
 from .incidence import (
@@ -40,6 +41,7 @@ __all__ = [
     "AuditLogRepository",
     "DeviceReader",
     "DeviceRegistry",
+    "DeviceRepository",
     "SyncStateRepository",
     "EmployeeRepository",
     "EmployeeScheduleAssignmentRepository",

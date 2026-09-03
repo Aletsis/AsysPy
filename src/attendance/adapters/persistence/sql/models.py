@@ -176,3 +176,21 @@ class SyncStateModel(Base):
 
     device_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     last_synced_uid: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+class DeviceModel(Base):
+    """Tabla del catálogo de relojes checadores / dispositivos biométricos."""
+
+    __tablename__ = "devices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    branch_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    protocol: Mapped[str] = mapped_column(String(30), default="tcp_4370", nullable=False)
+    serial_number: Mapped[str] = mapped_column(String(100), default="", nullable=False, index=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    port: Mapped[int | None] = mapped_column(Integer, default=4370, nullable=True)
+    location_label: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    capabilities: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+

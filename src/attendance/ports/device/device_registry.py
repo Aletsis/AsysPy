@@ -8,4 +8,5 @@ from attendance.domain.device.device import Device
 class DeviceRegistry(Protocol):
     """De donde salen los dispositivos a consultar (DB o configuración estática)."""
 
-    def get_active_devices(self) -> list[Device]: ...
+    def get_active_devices(self, branch_id: int | None = None) -> list[Device]: ...
+

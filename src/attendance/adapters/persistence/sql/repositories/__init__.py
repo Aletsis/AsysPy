@@ -5,6 +5,7 @@ from attendance.adapters.persistence.sql.repositories.audit_repo import SqlAudit
 from attendance.adapters.persistence.sql.repositories.daily_attendance_repo import (
     SqlDailyAttendanceRepository,
 )
+from attendance.adapters.persistence.sql.repositories.device_repo import SqlDeviceRepository
 from attendance.adapters.persistence.sql.repositories.employee_repo import SqlEmployeeRepository
 from attendance.adapters.persistence.sql.repositories.incidence_repo import SqlIncidenceRepository
 from attendance.adapters.persistence.sql.repositories.schedule_assignment_repo import (
@@ -16,6 +17,7 @@ __all__ = [
     "SqlAttendanceRepository",
     "SqlAuditLogRepository",
     "SqlDailyAttendanceRepository",
+    "SqlDeviceRepository",
     "SqlEmployeeRepository",
     "SqlIncidenceRepository",
     "SqlScheduleAssignmentRepository",

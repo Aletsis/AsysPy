@@ -134,26 +134,29 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 
 1. **Dominio Puro (`src/attendance/domain`)**:
    - Totalmente independiente de bases de datos, frameworks gráficos, librerías web o protocolos de hardware.
-   - Contiene la esencia de las reglas de negocio: `DailyAttendance`, `AttendancePairer`, `AttendanceEvaluator`, `Shift`, `Rotation`, `Incidence`, `AuditLog`.
+   - Contiene la esencia de las reglas de negocio: `Device`, `DeviceCapabilities`, `DailyAttendance`, `AttendancePairer`, `AttendanceEvaluator`, `Shift`, `Rotation`, `Incidence`, `AuditLog`.
 2. **Puertos (`src/attendance/ports`)**:
-   - Interfaces abstractas (Protocolos) que definen contratos para persistencia (`AttendanceRepository`, `DailyAttendanceRepository`, `EmployeeRepository`, etc.) y lectores de hardware (`DeviceReader`).
+   - Interfaces abstractas (Protocolos) que definen contratos para persistencia (`DeviceRepository`, `DeviceRegistry`, `AttendanceRepository`, `DailyAttendanceRepository`, `EmployeeRepository`, `SyncStateRepository`, etc.) y lectores de hardware (`DeviceReader`).
 3. **Casos de Uso (`src/attendance/application`)**:
-   - Orquesta la lógica del negocio: sincronización incremental de marcaciones, emparejamiento entrada/salida, evaluación de jornada diaria, ajuste manual con auditoría y justificación de incidencias.
+   - Orquesta la lógica del negocio: sincronización incremental de marcaciones (`sync_device_logs`), orquestación de sincronización masiva de relojes activos (`SyncAllActiveDevices`), emparejamiento entrada/salida, evaluación de jornada diaria, ajuste manual con auditoría y justificación de incidencias.
 4. **Adaptadores (`src/attendance/adapters`)**:
    - **Hardware**: Adaptador `ZkTcpReader` mediante `pyzk` (TCP 4370) con bloqueo de seguridad del reloj durante la lectura.
-   - **Persistencia en Memoria**: Repositorios en memoria para pruebas ultrarrápidas y desarrollo local aislado.
-   - **Persistencia Relacional SQL**: Repositorios SQLAlchemy 2.0 para SQLite, PostgreSQL, MySQL y SQL Server.
+   - **Persistencia en Memoria**: Repositorios en memoria (`InMemoryDeviceRepository`, `InMemoryAttendanceRepository`, etc.) para pruebas ultrarrápidas y desarrollo local aislado.
+   - **Persistencia Relacional SQL**: Repositorios SQLAlchemy 2.0 (`SqlDeviceRepository`, `SqlAttendanceRepository`, etc.) para SQLite, PostgreSQL, MySQL y SQL Server.
    - **Persistencia NoSQL**: Cliente base para MongoDB.
-   - **Fábrica Políglota (`PersistenceFactory`)**: Instanciación dinámica del conjunto de repositorios según configuración (`DATABASE_URL` o `PERSISTENCE_BACKEND`).
+   - **Fábrica Políglota (`PersistenceFactory`)**: Instanciación dinámica del conjunto de repositorios y catálogo (`PersistenceBundle.device_repo`) según configuración (`DATABASE_URL` o `PERSISTENCE_BACKEND`).
 
 ---
 
 ## 🚀 Alcances y Capacidades
 
-### 1. Ingesta Segura desde Relojes Biométricos
+### 1. Ingesta Segura desde Relojes Biométricos y Catálogo
+- **Catálogo Centralizado de Dispositivos**: Administración y persistencia de relojes biométricos (`Device`) con dirección IP, puerto, sucursal, número de serie, metadatos de hardware (`DeviceCapabilities`: firmware, algoritmos, MAC) y control de estado activo/inactivo.
+- **Orquestador de Sincronización Masiva (`SyncAllActiveDevices`)**: Sincronización por lote de todos los dispositivos activos del catálogo con soporte para filtrado por sucursal (`branch_id`), inyección configurable de lectores (`reader_factory`), y tolerancia a fallos por dispositivo (`stop_on_error=False`) con métricas agregadas (`SyncAllResult`).
 - Lectura segura por red TCP/IP (puerto 4370) con bloqueo temporal (`disable_device`) durante la extracción de datos para evitar registros huérfanos o colisión de lecturas, asegurando su reactivación (`enable_device`) en bloques `finally`.
 - Sincronización incremental: seguimiento de `last_record_uid` y `last_sync_time` para evitar duplicidad y procesar solo nuevos eventos.
 - Detección de reinicio o vaciado de memoria en el dispositivo para resincronización limpia.
+
 
 ### 2. Motor de Emparejamiento (Punch Pairing)
 - Asociación inteligente de marcaciones de entrada (*Check-In*) y salida (*Check-Out*).

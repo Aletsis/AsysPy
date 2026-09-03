@@ -61,8 +61,9 @@ class ZkTcpReader(DeviceReader):
             id=None,
             record_uid=record.uid if hasattr(record, "uid") else 0,
             employee_pin=str(record.user_id),
-            device_id=device.id,
+            device_id=device.id if device.id is not None else 0,
             timestamp=record.timestamp,
+
             raw_status=record.status,
             raw_punch=record.punch,
             auth_method=AuthMethod.from_punch_code(record.punch),

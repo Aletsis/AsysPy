@@ -15,6 +15,7 @@ from attendance.adapters.memory import (
     InMemoryAttendanceRepository,
     InMemoryAuditLogRepository,
     InMemoryDailyAttendanceRepository,
+    InMemoryDeviceRepository,
     InMemoryEmployeeRepository,
     InMemoryIncidenceRepository,
     InMemoryScheduleAssignmentRepository,
@@ -25,6 +26,7 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlAttendanceRepository,
     SqlAuditLogRepository,
     SqlDailyAttendanceRepository,
+    SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
     SqlScheduleAssignmentRepository,
@@ -35,7 +37,7 @@ from attendance.ports.attendance import (
     DailyAttendanceRepository,
 )
 from attendance.ports.audit import AuditLogRepository
-from attendance.ports.device import SyncStateRepository
+from attendance.ports.device import DeviceRepository, SyncStateRepository
 from attendance.ports.incidence import IncidenceRepository
 from attendance.ports.organization import EmployeeRepository
 from attendance.ports.schedule import EmployeeScheduleAssignmentRepository
@@ -52,7 +54,9 @@ class PersistenceBundle:
     schedule_assignment_repo: EmployeeScheduleAssignmentRepository
     audit_repo: AuditLogRepository
     sync_state_repo: SyncStateRepository
+    device_repo: DeviceRepository
     database: Database | None = None
+
 
 
 def check_driver_installed(module_name: str, package_extra: str, db_name: str) -> None:
@@ -92,6 +96,7 @@ class PersistenceFactory:
                 schedule_assignment_repo=InMemoryScheduleAssignmentRepository(),
                 audit_repo=InMemoryAuditLogRepository(),
                 sync_state_repo=InMemorySyncStateRepository(),
+                device_repo=InMemoryDeviceRepository(),
                 database=None,
             )
 
@@ -135,6 +140,7 @@ class PersistenceFactory:
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),
             sync_state_repo=SqlSyncStateRepository(session_factory),
+            device_repo=SqlDeviceRepository(session_factory),
             database=db,
         )
 
@@ -151,5 +157,7 @@ class PersistenceFactory:
             schedule_assignment_repo=SqlScheduleAssignmentRepository(session_factory),
             audit_repo=SqlAuditLogRepository(session_factory),
             sync_state_repo=SqlSyncStateRepository(session_factory),
+            device_repo=SqlDeviceRepository(session_factory),
             database=None,
         )
+
