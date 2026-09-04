@@ -254,6 +254,8 @@ class BranchModel(Base):
     code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, index=True)
     timezone: Mapped[str] = mapped_column(String(50), default="America/Mexico_City", nullable=False)
     address: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
 
@@ -267,6 +269,30 @@ class DepartmentModel(Base):
     code: Mapped[str | None] = mapped_column(String(30), unique=True, nullable=True, index=True)
     branch_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+
+class PositionModel(Base):
+    """Tabla del catálogo de puestos y cargos laborales."""
+
+    __tablename__ = "positions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+
+class DepartmentPositionModel(Base):
+    """Tabla asociativa Muchos a Muchos entre Departamentos y Puestos."""
+
+    __tablename__ = "department_positions"
+    __table_args__ = (
+        UniqueConstraint("department_id", "position_id", name="uq_department_position"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    department_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    position_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 
 
 

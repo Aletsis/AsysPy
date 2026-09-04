@@ -1,8 +1,7 @@
-"""Puerto DepartmentRepository para persistencia y consulta de departamentos."""
-
 from typing import Protocol
 
 from attendance.domain.organization.department import Department
+from attendance.domain.organization.position import Position
 
 
 class DepartmentRepository(Protocol):
@@ -19,3 +18,11 @@ class DepartmentRepository(Protocol):
     ) -> list[Department]: ...
 
     def delete(self, department_id: int) -> bool: ...
+
+    def assign_position(self, department_id: int, position_id: int) -> None: ...
+
+    def remove_position(self, department_id: int, position_id: int) -> bool: ...
+
+    def get_positions(
+        self, department_id: int, active_only: bool = False
+    ) -> list[Position]: ...

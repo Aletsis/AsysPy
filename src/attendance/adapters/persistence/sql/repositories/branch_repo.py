@@ -33,6 +33,8 @@ class SqlBranchRepository(BranchRepository):
                 existing.code = branch.code
                 existing.timezone = branch.timezone
                 existing.address = address_to_dict(branch.address)
+                existing.email = branch.email
+                existing.phone_number = branch.phone_number
                 existing.active = branch.active
                 session.commit()
                 branch.id = existing.id

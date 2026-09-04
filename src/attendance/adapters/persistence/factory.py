@@ -20,6 +20,7 @@ from attendance.adapters.memory import (
     InMemoryDeviceRepository,
     InMemoryEmployeeRepository,
     InMemoryIncidenceRepository,
+    InMemoryPositionRepository,
     InMemoryRotationPatternRepository,
     InMemoryScheduleAssignmentRepository,
     InMemoryShiftRepository,
@@ -35,6 +36,7 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlDeviceRepository,
     SqlEmployeeRepository,
     SqlIncidenceRepository,
+    SqlPositionRepository,
     SqlRotationPatternRepository,
     SqlScheduleAssignmentRepository,
     SqlShiftRepository,
@@ -51,6 +53,7 @@ from attendance.ports.organization import (
     BranchRepository,
     DepartmentRepository,
     EmployeeRepository,
+    PositionRepository,
 )
 from attendance.ports.schedule import (
     EmployeeScheduleAssignmentRepository,
@@ -75,6 +78,7 @@ class PersistenceBundle:
     device_repo: DeviceRepository
     shift_repo: ShiftRepository
     rotation_pattern_repo: RotationPatternRepository
+    position_repo: PositionRepository | None = None
     database: Database | None = None
 
 
@@ -109,12 +113,16 @@ class PersistenceFactory:
         ).lower()
 
         if resolved_backend in ("memory", "inmemory", "test"):
+            pos_repo = InMemoryPositionRepository()
+            dept_repo = InMemoryDepartmentRepository(position_repo=pos_repo)
+            pos_repo.department_repo = dept_repo
+
             return PersistenceBundle(
                 attendance_repo=InMemoryAttendanceRepository(),
                 daily_attendance_repo=InMemoryDailyAttendanceRepository(),
                 employee_repo=InMemoryEmployeeRepository(),
                 branch_repo=InMemoryBranchRepository(),
-                department_repo=InMemoryDepartmentRepository(),
+                department_repo=dept_repo,
                 incidence_repo=InMemoryIncidenceRepository(),
                 schedule_assignment_repo=InMemoryScheduleAssignmentRepository(),
                 audit_repo=InMemoryAuditLogRepository(),
@@ -122,6 +130,7 @@ class PersistenceFactory:
                 device_repo=InMemoryDeviceRepository(),
                 shift_repo=InMemoryShiftRepository(),
                 rotation_pattern_repo=InMemoryRotationPatternRepository(),
+                position_repo=pos_repo,
                 database=None,
             )
 
@@ -170,6 +179,7 @@ class PersistenceFactory:
             device_repo=SqlDeviceRepository(session_factory),
             shift_repo=SqlShiftRepository(session_factory),
             rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
+            position_repo=SqlPositionRepository(session_factory),
             database=db,
         )
 
@@ -191,6 +201,7 @@ class PersistenceFactory:
             device_repo=SqlDeviceRepository(session_factory),
             shift_repo=SqlShiftRepository(session_factory),
             rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
+            position_repo=SqlPositionRepository(session_factory),
             database=None,
         )
 

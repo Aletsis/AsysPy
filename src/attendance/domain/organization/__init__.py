@@ -5,6 +5,7 @@ from .branch import Branch
 from .department import Department
 from .employee import Employee, Sex
 from .fingerprint import Fingerprint
+from .position import Position
 
 __all__ = [
     "Address",
@@ -12,5 +13,6 @@ __all__ = [
     "Department",
     "Employee",
     "Fingerprint",
+    "Position",
     "Sex",
 ]

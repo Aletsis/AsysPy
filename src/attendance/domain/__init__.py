@@ -52,6 +52,7 @@ from attendance.domain.organization import (
     Department,
     Employee,
     Fingerprint,
+    Position,
     Sex,
 )
 
@@ -97,6 +98,7 @@ __all__ = [
     "Department",
     "Employee",
     "Fingerprint",
+    "Position",
     "Sex",
     # Schedule
     "ShiftCategory",

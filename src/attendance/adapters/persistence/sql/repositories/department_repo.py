@@ -1,14 +1,20 @@
 """Repositorio SQL para Department usando SQLAlchemy."""
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from attendance.adapters.persistence.sql.mappers import (
     department_to_domain,
     department_to_model,
+    position_to_domain,
 )
-from attendance.adapters.persistence.sql.models import DepartmentModel
+from attendance.adapters.persistence.sql.models import (
+    DepartmentModel,
+    DepartmentPositionModel,
+    PositionModel,
+)
 from attendance.domain.organization.department import Department
+from attendance.domain.organization.position import Position
 from attendance.ports.organization.department_repository import DepartmentRepository
 
 
@@ -78,6 +84,59 @@ class SqlDepartmentRepository(DepartmentRepository):
             model = session.get(DepartmentModel, department_id)
             if not model:
                 return False
+            # Limpiar asociaciones N:M con puestos
+            session.execute(
+                delete(DepartmentPositionModel).where(
+                    DepartmentPositionModel.department_id == department_id
+                )
+            )
             session.delete(model)
             session.commit()
             return True
+
+    def assign_position(self, department_id: int, position_id: int) -> None:
+        """Asocia un puesto a un departamento si aún no está vinculado."""
+        with self._session_factory() as session:
+            existing = session.scalar(
+                select(DepartmentPositionModel).where(
+                    DepartmentPositionModel.department_id == department_id,
+                    DepartmentPositionModel.position_id == position_id,
+                )
+            )
+            if existing is None:
+                assoc = DepartmentPositionModel(
+                    department_id=department_id, position_id=position_id
+                )
+                session.add(assoc)
+                session.commit()
+
+    def remove_position(self, department_id: int, position_id: int) -> bool:
+        """Desvincula un puesto de un departamento. Retorna True si existía."""
+        with self._session_factory() as session:
+            result = session.execute(
+                delete(DepartmentPositionModel).where(
+                    DepartmentPositionModel.department_id == department_id,
+                    DepartmentPositionModel.position_id == position_id,
+                )
+            )
+            session.commit()
+            return result.rowcount > 0
+
+    def get_positions(
+        self, department_id: int, active_only: bool = False
+    ) -> list[Position]:
+        """Obtiene la lista de puestos asignados a un departamento."""
+        with self._session_factory() as session:
+            stmt = (
+                select(PositionModel)
+                .join(
+                    DepartmentPositionModel,
+                    PositionModel.id == DepartmentPositionModel.position_id,
+                )
+                .where(DepartmentPositionModel.department_id == department_id)
+            )
+            if active_only:
+                stmt = stmt.where(PositionModel.active.is_(True))
+            stmt = stmt.order_by(PositionModel.id)
+            models = session.scalars(stmt).all()
+            return [position_to_domain(m) for m in models]

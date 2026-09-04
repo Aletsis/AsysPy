@@ -10,6 +10,7 @@ from attendance.adapters.persistence.sql.repositories.department_repo import Sql
 from attendance.adapters.persistence.sql.repositories.device_repo import SqlDeviceRepository
 from attendance.adapters.persistence.sql.repositories.employee_repo import SqlEmployeeRepository
 from attendance.adapters.persistence.sql.repositories.incidence_repo import SqlIncidenceRepository
+from attendance.adapters.persistence.sql.repositories.position_repo import SqlPositionRepository
 from attendance.adapters.persistence.sql.repositories.rotation_pattern_repo import (
     SqlRotationPatternRepository,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "SqlDeviceRepository",
     "SqlEmployeeRepository",
     "SqlIncidenceRepository",
+    "SqlPositionRepository",
     "SqlRotationPatternRepository",
     "SqlScheduleAssignmentRepository",
     "SqlShiftRepository",

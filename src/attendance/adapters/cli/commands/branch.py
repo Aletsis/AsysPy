@@ -36,19 +36,23 @@ def cmd_branch_add(args: argparse.Namespace, ctx: CLIContext) -> int:
         timezone=args.timezone or "America/Mexico_City",
         address=address,
         active=not args.inactive,
+        email=args.email,
+        phone_number=args.phone,
     )
 
     saved = bundle.branch_repo.save(branch)
     print(f"\n{green('✔')} Sucursal {bold(saved.name)} (Código: {saved.code}) registrada exitosamente con ID {saved.id}.")
-    headers = ["ID", "Código", "Nombre", "Zona Horaria", "Estado"]
+    headers = ["ID", "Código", "Nombre", "Zona Horaria", "Correo", "Teléfono", "Estado"]
     rows = [[
         str(saved.id or "-"),
         saved.code,
         saved.name,
         saved.timezone,
+        saved.email or "-",
+        saved.phone_number or "-",
         green("Activo") if saved.active else red("Inactivo"),
     ]]
-    print(render_table(headers=headers, rows=rows, alignments=["right", "left", "left", "left", "center"]))
+    print(render_table(headers=headers, rows=rows, alignments=["right", "left", "left", "left", "left", "left", "center"]))
     return 0
 
 
@@ -75,6 +79,8 @@ def cmd_branch_show(args: argparse.Namespace, ctx: CLIContext) -> int:
         ["Nombre", branch.name],
         ["Zona Horaria", branch.timezone],
         ["Ubicación / Ciudad", addr_str],
+        ["Correo Electrónico", branch.email or "-"],
+        ["Teléfono", branch.phone_number or "-"],
         ["Estado", green("Activo") if branch.active else red("Inactivo")],
     ]
     print(f"\n{cyan(bold('Detalle de Sucursal:'))}")
@@ -141,6 +147,11 @@ def cmd_branch_edit(args: argparse.Namespace, ctx: CLIContext) -> int:
     elif args.inactive:
         branch.active = False
 
+    if args.email is not None:
+        branch.email = args.email
+    if args.phone is not None:
+        branch.phone_number = args.phone
+
     if args.city or args.state or args.street or args.postal_code:
         curr = branch.address
         branch.address = Address(
@@ -201,6 +212,8 @@ def register_branch_subparser(subparsers: argparse._SubParsersAction) -> None:
     add_parser.add_argument("--name", required=True, help="Nombre de la sucursal (ej. 'Sucursal Matriz')")
     add_parser.add_argument("--code", required=True, help="Código único de la sucursal (ej. 'MAT-01')")
     add_parser.add_argument("--timezone", default="America/Mexico_City", help="Zona horaria IANA (predeterminado America/Mexico_City)")
+    add_parser.add_argument("--email", help="Correo electrónico de contacto de la sucursal")
+    add_parser.add_argument("--phone", help="Número telefónico de la sucursal")
     add_parser.add_argument("--city", help="Ciudad o alcaldía")
     add_parser.add_argument("--state", help="Estado o provincia")
     add_parser.add_argument("--street", help="Calle y número")
@@ -228,6 +241,8 @@ def register_branch_subparser(subparsers: argparse._SubParsersAction) -> None:
     edit_parser.add_argument("--code", help="Código de la sucursal a modificar")
     edit_parser.add_argument("--name", help="Nuevo nombre de la sucursal")
     edit_parser.add_argument("--timezone", help="Nueva zona horaria IANA")
+    edit_parser.add_argument("--email", help="Nuevo correo electrónico de contacto")
+    edit_parser.add_argument("--phone", help="Nuevo número telefónico de contacto")
     edit_parser.add_argument("--city", help="Nueva ciudad o alcaldía")
     edit_parser.add_argument("--state", help="Nuevo estado o provincia")
     edit_parser.add_argument("--street", help="Nueva calle")

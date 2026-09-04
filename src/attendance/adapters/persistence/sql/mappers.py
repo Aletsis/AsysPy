@@ -16,6 +16,7 @@ from attendance.adapters.persistence.sql.models import (
     EmployeeFingerprintModel,
     EmployeeModel,
     JustificationModel,
+    PositionModel,
     RotationPatternModel,
     ScheduleAssignmentModel,
     ShiftModel,
@@ -35,6 +36,7 @@ from attendance.domain.organization.branch import Branch
 from attendance.domain.organization.department import Department
 from attendance.domain.organization.employee import Employee, Sex
 from attendance.domain.organization.fingerprint import Fingerprint
+from attendance.domain.organization.position import Position
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
 from attendance.domain.schedule.enums import (
     AssignmentMode,
@@ -615,6 +617,8 @@ def branch_to_domain(model: BranchModel) -> Branch:
         address=address_from_dict(model.address),
         timezone=model.timezone,
         active=model.active,
+        email=model.email,
+        phone_number=model.phone_number,
     )
 
 
@@ -627,6 +631,8 @@ def branch_to_model(entity: Branch) -> BranchModel:
         address=address_to_dict(entity.address),
         timezone=entity.timezone,
         active=entity.active,
+        email=entity.email,
+        phone_number=entity.phone_number,
     )
 
 
@@ -651,6 +657,29 @@ def department_to_model(entity: Department) -> DepartmentModel:
         name=entity.name,
         code=entity.code,
         branch_id=entity.branch_id,
+        active=entity.active,
+    )
+
+
+# ============================================================================
+# Position Mappers
+# ============================================================================
+def position_to_domain(model: PositionModel) -> Position:
+    """Convierte un PositionModel a la entidad Position del dominio."""
+    return Position(
+        id=model.id,
+        name=model.name,
+        code=model.code,
+        active=model.active,
+    )
+
+
+def position_to_model(entity: Position) -> PositionModel:
+    """Convierte una entidad Position a PositionModel."""
+    return PositionModel(
+        id=entity.id if entity.id is not None else None,
+        name=entity.name,
+        code=entity.code,
         active=entity.active,
     )
 
