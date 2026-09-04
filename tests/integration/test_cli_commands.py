@@ -38,20 +38,22 @@ def test_cli_device_list_empty(capsys) -> None:
 
 def test_cli_attendance_adjust_and_list(capsys) -> None:
     # 1. Crear marcación manual
-    code_adjust = main([
-        "attendance",
-        "adjust",
-        "--employee-pin",
-        "E-100",
-        "--timestamp",
-        "2026-09-03 08:00:00",
-        "--reason",
-        "Ajuste por falla en lector biométrico",
-        "--modified-by",
-        "supervisor_test",
-        "--backend",
-        "memory",
-    ])
+    code_adjust = main(
+        [
+            "attendance",
+            "adjust",
+            "--employee-pin",
+            "E-100",
+            "--timestamp",
+            "2026-09-03 08:00:00",
+            "--reason",
+            "Ajuste por falla en lector biométrico",
+            "--modified-by",
+            "supervisor_test",
+            "--backend",
+            "memory",
+        ]
+    )
     assert code_adjust == 0
     captured = capsys.readouterr()
     assert "Marcación manual creada exitosamente" in captured.out
@@ -60,18 +62,20 @@ def test_cli_attendance_adjust_and_list(capsys) -> None:
 
 def test_cli_report_summary_formats(capsys, tmp_path: Path) -> None:
     # Formato JSON
-    code_json = main([
-        "report",
-        "summary",
-        "--start-date",
-        "2026-09-01",
-        "--end-date",
-        "2026-09-05",
-        "--format",
-        "json",
-        "--backend",
-        "memory",
-    ])
+    code_json = main(
+        [
+            "report",
+            "summary",
+            "--start-date",
+            "2026-09-01",
+            "--end-date",
+            "2026-09-05",
+            "--format",
+            "json",
+            "--backend",
+            "memory",
+        ]
+    )
     assert code_json == 0
     captured = capsys.readouterr()
     parsed_json = json.loads(captured.out)
@@ -79,20 +83,22 @@ def test_cli_report_summary_formats(capsys, tmp_path: Path) -> None:
 
     # Formato CSV a archivo
     out_file = tmp_path / "test_report.csv"
-    code_csv = main([
-        "report",
-        "summary",
-        "--start-date",
-        "2026-09-01",
-        "--end-date",
-        "2026-09-05",
-        "--format",
-        "csv",
-        "--output",
-        str(out_file),
-        "--backend",
-        "memory",
-    ])
+    code_csv = main(
+        [
+            "report",
+            "summary",
+            "--start-date",
+            "2026-09-01",
+            "--end-date",
+            "2026-09-05",
+            "--format",
+            "csv",
+            "--output",
+            str(out_file),
+            "--backend",
+            "memory",
+        ]
+    )
     assert code_csv == 0
     assert out_file.exists()
     content = out_file.read_text(encoding="utf-8")
@@ -117,7 +123,9 @@ def test_cli_device_probe_mocked(capsys) -> None:
             )
         ]
 
-        code = main(["device", "probe", "--ip", "192.168.1.50", "--port", "4370", "--backend", "memory"])
+        code = main(
+            ["device", "probe", "--ip", "192.168.1.50", "--port", "4370", "--backend", "memory"]
+        )
         assert code == 0
         captured = capsys.readouterr()
         assert "Conexión exitosa con el reloj biométrico" in captured.out
@@ -130,7 +138,9 @@ def test_cli_device_sync_mocked(capsys) -> None:
         instance = mock_reader_cls.return_value
         instance.get_raw_logs.return_value = []
 
-        code = main(["device", "sync", "--ip", "192.168.1.50", "--port", "4370", "--backend", "memory"])
+        code = main(
+            ["device", "sync", "--ip", "192.168.1.50", "--port", "4370", "--backend", "memory"]
+        )
         assert code == 0
         captured = capsys.readouterr()
         assert "Sincronización exitosa" in captured.out
@@ -154,7 +164,6 @@ def test_cli_attendance_evaluate_flow(capsys) -> None:
         hire_date=date(2020, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=1,
         active=True,
     )
@@ -181,14 +190,16 @@ def test_cli_attendance_evaluate_flow(capsys) -> None:
 
     # Parchear para que la CLI use este bundle en memoria configurado
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
-        code = main([
-            "attendance",
-            "evaluate",
-            "--employee-pin",
-            "E100",
-            "--date",
-            "2026-09-02",
-        ])
+        code = main(
+            [
+                "attendance",
+                "evaluate",
+                "--employee-pin",
+                "E100",
+                "--date",
+                "2026-09-02",
+            ]
+        )
         assert code == 0
         captured = capsys.readouterr()
         assert "E100" in captured.out

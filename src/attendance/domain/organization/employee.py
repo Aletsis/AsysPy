@@ -38,7 +38,6 @@ class Employee:
     hire_date: date = field(default_factory=date.today)
     department_id: int = 1
     position_id: int | None = None
-    position: str = "General"
     home_branch_id: int = 1
     active: bool = True
     email: str | None = None
@@ -76,12 +75,6 @@ class Employee:
                 self.sex = Sex(self.sex.lower())
             except ValueError:
                 pass  # La validación generará el ValidationError correspondiente
-
-        if self.position is not None:
-            cleaned_position = str(self.position).strip()
-            self.position = cleaned_position
-        else:
-            self.position = "General"
 
         if self.email is not None:
             cleaned_email = str(self.email).strip().lower()
@@ -135,39 +128,53 @@ class Employee:
         if not self.paternal_last_name:
             raise ValidationError("El apellido paterno del empleado no puede estar vacío.")
         if len(self.paternal_last_name) > 100:
-            raise ValidationError("El apellido paterno del empleado no puede exceder los 100 caracteres.")
+            raise ValidationError(
+                "El apellido paterno del empleado no puede exceder los 100 caracteres."
+            )
 
         # Validación de Apellido Materno (opcional)
         if self.maternal_last_name is not None and len(self.maternal_last_name) > 100:
-            raise ValidationError("El apellido materno del empleado no puede exceder los 100 caracteres.")
+            raise ValidationError(
+                "El apellido materno del empleado no puede exceder los 100 caracteres."
+            )
 
         # Validación de Sexo (obligatorio)
         if self.sex is None:
-            raise ValidationError("El sexo del empleado es obligatorio. Debe ser 'male' o 'female'.")
+            raise ValidationError(
+                "El sexo del empleado es obligatorio. Debe ser 'male' o 'female'."
+            )
         if not isinstance(self.sex, Sex):
-            raise ValidationError(f"El sexo del empleado es inválido: {self.sex}. Debe ser 'male' o 'female'.")
+            raise ValidationError(
+                f"El sexo del empleado es inválido: {self.sex}. Debe ser 'male' o 'female'."
+            )
 
         # Validación de Fecha de Contratación (obligatorio tras normalización)
         if not isinstance(self.hire_date, date):
             raise ValidationError("La fecha de ingreso debe ser una fecha válida.")
 
         # Validación de Departamento (entero positivo)
-        if not isinstance(self.department_id, int) or isinstance(self.department_id, bool) or self.department_id <= 0:
+        if (
+            not isinstance(self.department_id, int)
+            or isinstance(self.department_id, bool)
+            or self.department_id <= 0
+        ):
             raise ValidationError("El ID de departamento debe ser un entero positivo.")
 
         # Validación de Puesto ID (opcional)
         if self.position_id is not None:
-            if not isinstance(self.position_id, int) or isinstance(self.position_id, bool) or self.position_id <= 0:
+            if (
+                not isinstance(self.position_id, int)
+                or isinstance(self.position_id, bool)
+                or self.position_id <= 0
+            ):
                 raise ValidationError("El ID de puesto debe ser un entero positivo.")
 
-        # Validación de Puesto
-        if not self.position:
-            raise ValidationError("El puesto de trabajo no puede estar vacío.")
-        if len(self.position) > 100:
-            raise ValidationError("El puesto de trabajo no puede exceder los 100 caracteres.")
-
         # Validación de Sucursal Base (entero positivo)
-        if not isinstance(self.home_branch_id, int) or isinstance(self.home_branch_id, bool) or self.home_branch_id <= 0:
+        if (
+            not isinstance(self.home_branch_id, int)
+            or isinstance(self.home_branch_id, bool)
+            or self.home_branch_id <= 0
+        ):
             raise ValidationError("El ID de sucursal base debe ser un entero positivo.")
 
         # Validación de Estado Activo
@@ -181,7 +188,9 @@ class Employee:
             if len(self.email) > 255:
                 raise ValidationError("El correo electrónico no puede exceder los 255 caracteres.")
             if not _EMAIL_REGEX.match(self.email):
-                raise ValidationError(f"El formato del correo electrónico es inválido: '{self.email}'.")
+                raise ValidationError(
+                    f"El formato del correo electrónico es inválido: '{self.email}'."
+                )
 
         # Validación de Número Telefónico (opcional)
         if self.phone_number is not None:
@@ -202,25 +211,35 @@ class Employee:
             if not self.curp:
                 raise ValidationError("El CURP no puede ser una cadena vacía.")
             if len(self.curp) != 18:
-                raise ValidationError(f"El CURP debe tener exactamente 18 caracteres (actualmente tiene {len(self.curp)}).")
+                raise ValidationError(
+                    f"El CURP debe tener exactamente 18 caracteres (actualmente tiene {len(self.curp)})."
+                )
             if not _CURP_REGEX.match(self.curp):
-                raise ValidationError(f"El formato del CURP es inválido según el estándar oficial de RENAPO: '{self.curp}'.")
+                raise ValidationError(
+                    f"El formato del CURP es inválido según el estándar oficial de RENAPO: '{self.curp}'."
+                )
 
         # Validación de RFC (opcional)
         if self.rfc is not None:
             if not self.rfc:
                 raise ValidationError("El RFC no puede ser una cadena vacía.")
             if len(self.rfc) != 13:
-                raise ValidationError(f"El RFC de persona física debe tener exactamente 13 caracteres (actualmente tiene {len(self.rfc)}).")
+                raise ValidationError(
+                    f"El RFC de persona física debe tener exactamente 13 caracteres (actualmente tiene {len(self.rfc)})."
+                )
             if not _RFC_REGEX.match(self.rfc):
-                raise ValidationError(f"El formato del RFC es inválido según el estándar oficial del SAT: '{self.rfc}'.")
+                raise ValidationError(
+                    f"El formato del RFC es inválido según el estándar oficial del SAT: '{self.rfc}'."
+                )
 
         # Validación de Contraseña para Checador (opcional)
         if self.password is not None:
             if not self.password:
                 raise ValidationError("La contraseña para checador no puede ser una cadena vacía.")
             if not self.password.isdigit():
-                raise ValidationError("La contraseña para registro en reloj checador debe ser exclusivamente numérica.")
+                raise ValidationError(
+                    "La contraseña para registro en reloj checador debe ser exclusivamente numérica."
+                )
             if not (1 <= len(self.password) <= 8):
                 raise ValidationError(
                     f"La contraseña para checador debe tener entre 1 y 8 dígitos numéricos (actualmente tiene {len(self.password)})."
@@ -239,14 +258,20 @@ class Employee:
         if not isinstance(self.fingerprints, list):
             raise ValidationError("La lista de huellas biométricas debe ser una lista.")
         if len(self.fingerprints) > 10:
-            raise ValidationError("Un empleado no puede tener más de 10 huellas registradas (una por cada dedo).")
+            raise ValidationError(
+                "Un empleado no puede tener más de 10 huellas registradas (una por cada dedo)."
+            )
 
         seen_fingers: set[int] = set()
         for fp in self.fingerprints:
             if not isinstance(fp, Fingerprint):
-                raise ValidationError("Cada elemento de la lista de huellas debe ser una instancia de Fingerprint.")
+                raise ValidationError(
+                    "Cada elemento de la lista de huellas debe ser una instancia de Fingerprint."
+                )
             if fp.finger_index in seen_fingers:
-                raise ValidationError(f"Existe más de una huella registrada para el dedo con índice {fp.finger_index}.")
+                raise ValidationError(
+                    f"Existe más de una huella registrada para el dedo con índice {fp.finger_index}."
+                )
             seen_fingers.add(fp.finger_index)
 
     @property
@@ -315,16 +340,6 @@ class Employee:
     @puesto_id.setter
     def puesto_id(self, value: int | None) -> None:
         self.position_id = value
-        self.validate()
-
-    @property
-    def puesto(self) -> str:
-        return self.position
-
-    @puesto.setter
-    def puesto(self, value: str) -> None:
-        self.position = value
-        self._normalize()
         self.validate()
 
     @property

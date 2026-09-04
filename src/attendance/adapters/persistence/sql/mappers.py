@@ -113,7 +113,6 @@ def employee_to_domain(
         sex=Sex(model.sex),
         department_id=model.department_id,
         position_id=model.position_id,
-        position=model.position,
         home_branch_id=model.home_branch_id,
         active=model.active,
         email=model.email,
@@ -138,7 +137,6 @@ def employee_to_model(entity: Employee) -> EmployeeModel:
         sex=entity.sex.value,
         department_id=entity.department_id,
         position_id=entity.position_id,
-        position=entity.position,
         home_branch_id=entity.home_branch_id,
         active=entity.active,
         email=entity.email,
@@ -276,7 +274,9 @@ def shift_to_model(entity: ShiftDefinition) -> ShiftModel:
     return ShiftModel(
         id=entity.id if entity.id is not None else None,
         name=entity.name,
-        category=entity.category.value if isinstance(entity.category, ShiftCategory) else str(entity.category),
+        category=entity.category.value
+        if isinstance(entity.category, ShiftCategory)
+        else str(entity.category),
         start_time=entity.start_time,
         end_time=entity.end_time,
         tolerance_minutes=entity.tolerance_minutes,
@@ -289,8 +289,12 @@ def shift_to_domain(model: ShiftModel) -> ShiftDefinition:
     """Convierte un ShiftModel a ShiftDefinition del dominio."""
     segments = [
         ShiftSegment(
-            start_time=time.fromisoformat(s["start_time"]) if isinstance(s["start_time"], str) else s["start_time"],
-            end_time=time.fromisoformat(s["end_time"]) if isinstance(s["end_time"], str) else s["end_time"],
+            start_time=time.fromisoformat(s["start_time"])
+            if isinstance(s["start_time"], str)
+            else s["start_time"],
+            end_time=time.fromisoformat(s["end_time"])
+            if isinstance(s["end_time"], str)
+            else s["end_time"],
             crosses_midnight=s.get("crosses_midnight", False),
             tolerance_minutes=s.get("tolerance_minutes", 0),
             name=s.get("name", "Segmento"),
@@ -323,7 +327,9 @@ def rotation_pattern_to_model(entity: RotationPattern) -> RotationPatternModel:
         id=entity.id if entity.id is not None else None,
         name=entity.name,
         shift_sequence=list(entity.shift_sequence),
-        frequency=entity.frequency.value if isinstance(entity.frequency, RotationFrequency) else str(entity.frequency),
+        frequency=entity.frequency.value
+        if isinstance(entity.frequency, RotationFrequency)
+        else str(entity.frequency),
         anchor_date=entity.anchor_date,
     )
 
@@ -465,9 +471,7 @@ def audit_log_to_model(entity: AuditLog) -> AuditLogModel:
 def schedule_assignment_to_domain(model: ScheduleAssignmentModel) -> EmployeeScheduleAssignment:
     """Convierte un ScheduleAssignmentModel a EmployeeScheduleAssignment del dominio."""
     working_weekdays = (
-        {Weekday(d) for d in model.working_weekdays}
-        if model.working_weekdays is not None
-        else None
+        {Weekday(d) for d in model.working_weekdays} if model.working_weekdays is not None else None
     )
     return EmployeeScheduleAssignment(
         id=model.id,
@@ -487,9 +491,7 @@ def schedule_assignment_to_model(
 ) -> ScheduleAssignmentModel:
     """Convierte EmployeeScheduleAssignment a ScheduleAssignmentModel."""
     working_weekdays = (
-        [w.value for w in entity.working_weekdays]
-        if entity.working_weekdays is not None
-        else None
+        [w.value for w in entity.working_weekdays] if entity.working_weekdays is not None else None
     )
     return ScheduleAssignmentModel(
         id=entity.id if entity.id is not None else None,
@@ -519,7 +521,9 @@ def capabilities_to_dict(capabilities: DeviceCapabilities | None) -> dict[str, A
         "fingerprint_algorithm_version": capabilities.fingerprint_algorithm_version,
         "mac_address": capabilities.mac_address,
         "pin_width": capabilities.pin_width,
-        "last_read_at": capabilities.last_read_at.isoformat() if capabilities.last_read_at else None,
+        "last_read_at": capabilities.last_read_at.isoformat()
+        if capabilities.last_read_at
+        else None,
     }
 
 
@@ -527,9 +531,7 @@ def capabilities_from_dict(data: dict[str, Any] | None) -> DeviceCapabilities | 
     """Deserializa un diccionario JSON a DeviceCapabilities."""
     if not data:
         return None
-    last_read = (
-        datetime.fromisoformat(data["last_read_at"]) if data.get("last_read_at") else None
-    )
+    last_read = datetime.fromisoformat(data["last_read_at"]) if data.get("last_read_at") else None
     return DeviceCapabilities(
         firmware_version=data.get("firmware_version"),
         platform=data.get("platform"),
@@ -686,6 +688,3 @@ def position_to_model(entity: Position) -> PositionModel:
         description=entity.description,
         active=entity.active,
     )
-
-
-

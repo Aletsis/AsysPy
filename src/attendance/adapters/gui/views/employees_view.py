@@ -31,7 +31,9 @@ from attendance.domain.organization.employee import Employee, Sex
 class EmployeeEditDialog(QDialog):
     """Modal para dar de alta o editar un empleado."""
 
-    def __init__(self, app_state: AppState, employee: Employee | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, app_state: AppState, employee: Employee | None = None, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self.state = app_state
         self.employee = employee
@@ -49,8 +51,9 @@ class EmployeeEditDialog(QDialog):
         self.txt_pin = QLineEdit(self.employee.pin if self.employee else "")
         self.txt_first_name = QLineEdit(self.employee.first_name if self.employee else "")
         self.txt_paternal = QLineEdit(self.employee.paternal_last_name if self.employee else "")
-        self.txt_maternal = QLineEdit(self.employee.maternal_last_name or "" if self.employee else "")
-        self.txt_position = QLineEdit(self.employee.position if self.employee else "Operativo")
+        self.txt_maternal = QLineEdit(
+            self.employee.maternal_last_name or "" if self.employee else ""
+        )
 
         self.combo_sex = QComboBox()
         self.combo_sex.addItem("Masculino", Sex.MALE)
@@ -65,7 +68,8 @@ class EmployeeEditDialog(QDialog):
 
         self.combo_branch = QComboBox()
         self.combo_dept = QComboBox()
-        self._load_branches_and_depts()
+        self.combo_position = QComboBox()
+        self._load_catalogs()
 
         form.addRow("PIN / ID Biométrico:", self.txt_pin)
         form.addRow("Nombre(s):", self.txt_first_name)
@@ -73,7 +77,7 @@ class EmployeeEditDialog(QDialog):
         form.addRow("Apellido Materno:", self.txt_maternal)
         form.addRow("Sexo:", self.combo_sex)
         form.addRow("Fecha de Ingreso:", self.date_hire)
-        form.addRow("Puesto de Trabajo:", self.txt_position)
+        form.addRow("Puesto de Trabajo:", self.combo_position)
         form.addRow("Sucursal Base:", self.combo_branch)
         form.addRow("Departamento:", self.combo_dept)
 
@@ -91,7 +95,7 @@ class EmployeeEditDialog(QDialog):
         btns.addWidget(self.btn_save)
         layout.addLayout(btns)
 
-    def _load_branches_and_depts(self) -> None:
+    def _load_catalogs(self) -> None:
         bundle = self.state.bundle
         if not bundle:
             return
@@ -112,6 +116,12 @@ class EmployeeEditDialog(QDialog):
             if d.id is not None:
                 self.combo_dept.addItem(d.name, d.id)
 
+        positions = bundle.position_repo.list_all() if bundle.position_repo else []
+        self.combo_position.addItem("Sin puesto", None)
+        for p in positions:
+            if p.id is not None:
+                self.combo_position.addItem(p.name, p.id)
+
         if self.employee:
             # Seleccionar sucursal
             for i in range(self.combo_branch.count()):
@@ -123,22 +133,31 @@ class EmployeeEditDialog(QDialog):
                 if self.combo_dept.itemData(i) == self.employee.department_id:
                     self.combo_dept.setCurrentIndex(i)
                     break
+            # Seleccionar puesto
+            for i in range(self.combo_position.count()):
+                if self.combo_position.itemData(i) == self.employee.position_id:
+                    self.combo_position.setCurrentIndex(i)
+                    break
 
     def _on_save(self) -> None:
         pin = self.txt_pin.text().strip()
         first_name = self.txt_first_name.text().strip()
         paternal = self.txt_paternal.text().strip()
         maternal = self.txt_maternal.text().strip() or None
-        position = self.txt_position.text().strip() or "Operativo"
+        position_id = self.combo_position.currentData()
         branch_id = self.combo_branch.currentData()
         dept_id = self.combo_dept.currentData()
 
         if not pin or not first_name or not paternal:
-            QMessageBox.warning(self, "Campos requeridos", "PIN, Nombre y Apellido Paterno son obligatorios.")
+            QMessageBox.warning(
+                self, "Campos requeridos", "PIN, Nombre y Apellido Paterno son obligatorios."
+            )
             return
 
         if branch_id is None or dept_id is None:
-            QMessageBox.warning(self, "Catálogo incompleto", "Debe existir al menos una sucursal y un departamento.")
+            QMessageBox.warning(
+                self, "Catálogo incompleto", "Debe existir al menos una sucursal y un departamento."
+            )
             return
 
         bundle = self.state.bundle
@@ -155,7 +174,7 @@ class EmployeeEditDialog(QDialog):
                 self.employee.first_name = first_name
                 self.employee.paternal_last_name = paternal
                 self.employee.maternal_last_name = maternal
-                self.employee.position = position
+                self.employee.position_id = position_id
                 self.employee.sex = sex
                 self.employee.hire_date = hire_d
                 self.employee.home_branch_id = branch_id
@@ -168,7 +187,7 @@ class EmployeeEditDialog(QDialog):
                     first_name=first_name,
                     paternal_last_name=paternal,
                     maternal_last_name=maternal,
-                    position=position,
+                    position_id=position_id,
                     sex=sex,
                     hire_date=hire_d,
                     home_branch_id=branch_id,
@@ -190,7 +209,9 @@ class EmployeesView(QWidget):
         self._setup_ui()
         self.refresh_all()
 
-        self.state.data_updated.connect(lambda k: self.refresh_all() if k in ("all", "employees") else None)
+        self.state.data_updated.connect(
+            lambda k: self.refresh_all() if k in ("all", "employees") else None
+        )
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -248,9 +269,9 @@ class EmployeesView(QWidget):
         # Tabla
         self.emp_table = QTableWidget()
         self.emp_table.setColumnCount(7)
-        self.emp_table.setHorizontalHeaderLabels([
-            "ID", "PIN", "Nombre Completo", "Puesto", "Departamento", "Sucursal", "Estado"
-        ])
+        self.emp_table.setHorizontalHeaderLabels(
+            ["ID", "PIN", "Nombre Completo", "Puesto", "Departamento", "Sucursal", "Estado"]
+        )
         self.emp_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.emp_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.emp_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -316,12 +337,20 @@ class EmployeesView(QWidget):
             employees = bundle.employee_repo.list_all()
             depts = {d.id: d.name for d in bundle.department_repo.list_all() if d.id is not None}
             branches = {b.id: b.name for b in bundle.branch_repo.list_all() if b.id is not None}
+            positions = (
+                {p.id: p.name for p in bundle.position_repo.list_all() if p.id is not None}
+                if bundle.position_repo
+                else {}
+            )
 
             query = self.txt_search.text().strip().lower()
             if query:
                 employees = [
-                    e for e in employees
-                    if query in e.pin.lower() or query in e.full_name.lower() or query in e.position.lower()
+                    e
+                    for e in employees
+                    if query in e.pin.lower()
+                    or query in e.full_name.lower()
+                    or (e.position_id and query in positions.get(e.position_id, "").lower())
                 ]
 
             self.emp_table.setRowCount(len(employees))
@@ -329,12 +358,19 @@ class EmployeesView(QWidget):
                 self.emp_table.setItem(row, 0, QTableWidgetItem(str(emp.id)))
                 self.emp_table.setItem(row, 1, QTableWidgetItem(emp.pin))
                 self.emp_table.setItem(row, 2, QTableWidgetItem(emp.full_name))
-                self.emp_table.setItem(row, 3, QTableWidgetItem(emp.position))
-                self.emp_table.setItem(row, 4, QTableWidgetItem(depts.get(emp.department_id, "N/A")))
-                self.emp_table.setItem(row, 5, QTableWidgetItem(branches.get(emp.home_branch_id, "N/A")))
+                pos_display = positions.get(emp.position_id, "-") if emp.position_id else "-"
+                self.emp_table.setItem(row, 3, QTableWidgetItem(pos_display))
+                self.emp_table.setItem(
+                    row, 4, QTableWidgetItem(depts.get(emp.department_id, "N/A"))
+                )
+                self.emp_table.setItem(
+                    row, 5, QTableWidgetItem(branches.get(emp.home_branch_id, "N/A"))
+                )
 
                 status_item = QTableWidgetItem("ACTIVO" if emp.active else "BAJA")
-                status_item.setForeground(Qt.GlobalColor.green if emp.active else Qt.GlobalColor.gray)
+                status_item.setForeground(
+                    Qt.GlobalColor.green if emp.active else Qt.GlobalColor.gray
+                )
                 self.emp_table.setItem(row, 6, status_item)
         except Exception:
             pass
@@ -409,7 +445,9 @@ class EmployeesView(QWidget):
             self.state.bundle.employee_repo.save(emp)
             self.refresh_employees()
             self.state.data_updated.emit("employees")
-            self.state.notify(f"Colaborador {'reactivado' if emp.active else 'dado de baja'}.", "info")
+            self.state.notify(
+                f"Colaborador {'reactivado' if emp.active else 'dado de baja'}.", "info"
+            )
 
     def _add_department(self) -> None:
         if not self.state.bundle:
@@ -433,7 +471,9 @@ class EmployeesView(QWidget):
         layout.addLayout(btns)
 
         if dialog.exec() == QDialog.DialogCode.Accepted and txt_name.text().strip():
-            dept = Department(id=None, code=txt_code.text().strip(), name=txt_name.text().strip(), active=True)
+            dept = Department(
+                id=None, code=txt_code.text().strip(), name=txt_name.text().strip(), active=True
+            )
             self.state.bundle.department_repo.save(dept)
             self.refresh_departments()
             self.state.notify(f"Departamento '{dept.name}' creado.", "success")
@@ -461,7 +501,9 @@ class EmployeesView(QWidget):
 
         if dialog.exec() == QDialog.DialogCode.Accepted and txt_name.text().strip():
             code = (txt_name.text().strip()[:4] or "SUC").upper()
-            branch = Branch(id=None, name=txt_name.text().strip(), code=code, timezone=txt_tz.text().strip())
+            branch = Branch(
+                id=None, name=txt_name.text().strip(), code=code, timezone=txt_tz.text().strip()
+            )
             self.state.bundle.branch_repo.save(branch)
             self.refresh_branches()
             self.state.notify(f"Sucursal '{branch.name}' creada.", "success")

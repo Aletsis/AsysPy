@@ -30,7 +30,6 @@ def make_employee(pin: str = "1001") -> Employee:
         hire_date=date(2024, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Analista",
         home_branch_id=1,
         active=True,
     )
@@ -172,7 +171,9 @@ def test_partial_day_permission_by_hours():
     assert perm.end_time == time(16, 0)
 
     # Invalidez si hora fin es menor o igual a hora inicio
-    with pytest.raises(ValidationError, match="hora de inicio de permiso debe ser menor a la hora de fin"):
+    with pytest.raises(
+        ValidationError, match="hora de inicio de permiso debe ser menor a la hora de fin"
+    ):
         register_justification(
             employee_pin="1001",
             justification_type=JustificationType.PAID_LEAVE,

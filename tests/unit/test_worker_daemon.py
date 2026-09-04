@@ -43,7 +43,6 @@ def mock_bundle():
         hire_date=date(2024, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=1,
         active=True,
     )
@@ -153,6 +152,7 @@ def test_worker_graceful_shutdown_cooperative_wait(mock_bundle):
     # Detener el worker después de 0.1 segundos desde un hilo secundario
     def stopper():
         import time
+
         time.sleep(0.05)
         worker.request_shutdown()
 

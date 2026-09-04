@@ -20,7 +20,6 @@ def _make_valid_employee(**kwargs) -> Employee:
         "hire_date": date(2023, 1, 15),
         "sex": Sex.MALE,
         "department_id": 1,
-        "position": "Operador General",
         "home_branch_id": 1,
         "active": True,
     }
@@ -109,7 +108,6 @@ def test_employee_minimal_mandatory_creation():
     assert emp.maternal_last_name is None
     assert emp.department_id == 1
     assert emp.home_branch_id == 1
-    assert emp.position == "General"
     assert emp.position_id is None
     assert emp.active is True
     assert emp.email is None
@@ -149,16 +147,6 @@ def test_employee_position_id_optional_and_validations():
     for invalid in [0, -1, "5", False]:
         with pytest.raises(ValidationError):
             _make_valid_employee(position_id=invalid)
-
-
-def test_employee_position_string_optional_defaults_to_general():
-    emp = _make_valid_employee(position=None)
-    assert emp.position == "General"
-    assert emp.puesto == "General"
-
-    emp.puesto = "Supervisor de Calidad"
-    assert emp.position == "Supervisor de Calidad"
-    assert emp.puesto == "Supervisor de Calidad"
 
 
 def test_employee_department_and_branch_aliases():
@@ -202,12 +190,6 @@ def test_employee_invalid_home_branch_id(invalid_branch):
         _make_valid_employee(home_branch_id=invalid_branch)
 
 
-@pytest.mark.parametrize("invalid_pos", ["", "   ", "P" * 101])
-def test_employee_invalid_position(invalid_pos):
-    with pytest.raises(ValidationError):
-        _make_valid_employee(position=invalid_pos)
-
-
 @pytest.mark.parametrize("invalid_active", ["true", 1, 0, None])
 def test_employee_invalid_active(invalid_active):
     with pytest.raises(ValidationError):
@@ -227,17 +209,20 @@ def test_employee_valid_email():
     assert emp.email == "nuevo.correo@dominio.org"
 
 
-@pytest.mark.parametrize("invalid_email", [
-    "",
-    "   ",
-    "plainaddress",
-    "@missingusername.com",
-    "username@.com",
-    "username@domain",
-    "username@domain..com",
-    "user name@domain.com",
-    "a" * 250 + "@test.com",  # Excede 255
-])
+@pytest.mark.parametrize(
+    "invalid_email",
+    [
+        "",
+        "   ",
+        "plainaddress",
+        "@missingusername.com",
+        "username@.com",
+        "username@domain",
+        "username@domain..com",
+        "user name@domain.com",
+        "a" * 250 + "@test.com",  # Excede 255
+    ],
+)
 def test_employee_invalid_email(invalid_email):
     with pytest.raises(ValidationError):
         _make_valid_employee(email=invalid_email)
@@ -246,12 +231,15 @@ def test_employee_invalid_email(invalid_email):
 # ============================================================================
 # Pruebas para Número Telefónico (phone_number / telefono)
 # ============================================================================
-@pytest.mark.parametrize("valid_phone, expected_clean", [
-    ("5512345678", "5512345678"),
-    ("+52 55 1234 5678", "+52 55 1234 5678"),
-    ("(55) 1234-5678", "(55) 1234-5678"),
-    (" +5215512345678 ", "+5215512345678"),
-])
+@pytest.mark.parametrize(
+    "valid_phone, expected_clean",
+    [
+        ("5512345678", "5512345678"),
+        ("+52 55 1234 5678", "+52 55 1234 5678"),
+        ("(55) 1234-5678", "(55) 1234-5678"),
+        (" +5215512345678 ", "+5215512345678"),
+    ],
+)
 def test_employee_valid_phone(valid_phone, expected_clean):
     emp = _make_valid_employee(phone_number=valid_phone)
     assert emp.phone_number == expected_clean.strip()
@@ -261,14 +249,17 @@ def test_employee_valid_phone(valid_phone, expected_clean):
     assert emp.phone_number == "5599887766"
 
 
-@pytest.mark.parametrize("invalid_phone", [
-    "",
-    "   ",
-    "123456789",          # 9 dígitos (muy corto)
-    "1234567890123456",  # 16 dígitos (muy largo)
-    "55-1234-ABCD",      # contiene letras
-    "phone#5512345678",  # caracteres inválidos
-])
+@pytest.mark.parametrize(
+    "invalid_phone",
+    [
+        "",
+        "   ",
+        "123456789",  # 9 dígitos (muy corto)
+        "1234567890123456",  # 16 dígitos (muy largo)
+        "55-1234-ABCD",  # contiene letras
+        "phone#5512345678",  # caracteres inválidos
+    ],
+)
 def test_employee_invalid_phone(invalid_phone):
     with pytest.raises(ValidationError):
         _make_valid_employee(phone_number=invalid_phone)
@@ -283,16 +274,19 @@ def test_employee_valid_curp():
     assert emp.curp == "PEHJ850412HDFRMN03"
 
 
-@pytest.mark.parametrize("invalid_curp", [
-    "",
-    "   ",
-    "PEHJ850412HDFRMN0",    # 17 caracteres
-    "PEHJ850412HDFRMN031",  # 19 caracteres
-    "1EHJ850412HDFRMN03",   # Empieza con número
-    "PEHJ850412XDFRMN03",   # Sexo 'X' inválido (debe ser H o M)
-    "PEHJ850412HXXRMN03",   # Estado 'XX' inexistente en México
-    "PEHJ850412HDF11N03",   # Consonantes internas reemplazadas por números
-])
+@pytest.mark.parametrize(
+    "invalid_curp",
+    [
+        "",
+        "   ",
+        "PEHJ850412HDFRMN0",  # 17 caracteres
+        "PEHJ850412HDFRMN031",  # 19 caracteres
+        "1EHJ850412HDFRMN03",  # Empieza con número
+        "PEHJ850412XDFRMN03",  # Sexo 'X' inválido (debe ser H o M)
+        "PEHJ850412HXXRMN03",  # Estado 'XX' inexistente en México
+        "PEHJ850412HDF11N03",  # Consonantes internas reemplazadas por números
+    ],
+)
 def test_employee_invalid_curp(invalid_curp):
     with pytest.raises(ValidationError):
         _make_valid_employee(curp=invalid_curp)
@@ -306,14 +300,17 @@ def test_employee_valid_rfc():
     assert emp.rfc == "PEHJ850412AB1"
 
 
-@pytest.mark.parametrize("invalid_rfc", [
-    "",
-    "   ",
-    "PEHJ850412AB",    # 12 caracteres (persona moral, empleado debe ser física 13)
-    "PEHJ850412AB12",  # 14 caracteres
-    "1EHJ850412AB1",   # Empieza con número
-    "PEHJ85041AAB1",   # Fecha con letra
-])
+@pytest.mark.parametrize(
+    "invalid_rfc",
+    [
+        "",
+        "   ",
+        "PEHJ850412AB",  # 12 caracteres (persona moral, empleado debe ser física 13)
+        "PEHJ850412AB12",  # 14 caracteres
+        "1EHJ850412AB1",  # Empieza con número
+        "PEHJ85041AAB1",  # Fecha con letra
+    ],
+)
 def test_employee_invalid_rfc(invalid_rfc):
     with pytest.raises(ValidationError):
         _make_valid_employee(rfc=invalid_rfc)
@@ -332,13 +329,16 @@ def test_employee_valid_password(valid_pass):
     assert emp.password == "87654321"
 
 
-@pytest.mark.parametrize("invalid_pass", [
-    "",
-    "   ",
-    "123456789",  # > 8 dígitos (límite de teclado en reloj checador)
-    "abcd",       # No numérica
-    "12a4",       # Caracteres alfanuméricos no soportados en teclado numérico
-])
+@pytest.mark.parametrize(
+    "invalid_pass",
+    [
+        "",
+        "   ",
+        "123456789",  # > 8 dígitos (límite de teclado en reloj checador)
+        "abcd",  # No numérica
+        "12a4",  # Caracteres alfanuméricos no soportados en teclado numérico
+    ],
+)
 def test_employee_invalid_password(invalid_pass):
     with pytest.raises(ValidationError):
         _make_valid_employee(password=invalid_pass)
@@ -347,12 +347,15 @@ def test_employee_invalid_password(invalid_pass):
 # ============================================================================
 # Pruebas para Tarjeta RFID (card_number / tarjeta)
 # ============================================================================
-@pytest.mark.parametrize("valid_card", [
-    "0009876543",
-    "12345",
-    "A1B2C3D4",
-    "CARD0000000000000001",  # 20 caracteres
-])
+@pytest.mark.parametrize(
+    "valid_card",
+    [
+        "0009876543",
+        "12345",
+        "A1B2C3D4",
+        "CARD0000000000000001",  # 20 caracteres
+    ],
+)
 def test_employee_valid_card_number(valid_card):
     emp = _make_valid_employee(card_number=valid_card)
     assert emp.card_number == valid_card
@@ -362,13 +365,16 @@ def test_employee_valid_card_number(valid_card):
     assert emp.card_number == "9988776655"
 
 
-@pytest.mark.parametrize("invalid_card", [
-    "",
-    "   ",
-    "1234 5678",              # Espacios internos
-    "CARD00000000000000001",  # 21 caracteres (>20)
-    "CARD#123",               # Caracteres no alfanuméricos
-])
+@pytest.mark.parametrize(
+    "invalid_card",
+    [
+        "",
+        "   ",
+        "1234 5678",  # Espacios internos
+        "CARD00000000000000001",  # 21 caracteres (>20)
+        "CARD#123",  # Caracteres no alfanuméricos
+    ],
+)
 def test_employee_invalid_card_number(invalid_card):
     with pytest.raises(ValidationError):
         _make_valid_employee(card_number=invalid_card)
@@ -410,7 +416,9 @@ def test_employee_fingerprints_duplicate_detection_on_init():
     fp0 = Fingerprint(finger_index=0, template="template_1")
     fp0_dup = Fingerprint(finger_index=0, template="template_2")
 
-    with pytest.raises(ValidationError, match="Existe más de una huella registrada para el dedo con índice 0"):
+    with pytest.raises(
+        ValidationError, match="Existe más de una huella registrada para el dedo con índice 0"
+    ):
         _make_valid_employee(fingerprints=[fp0, fp0_dup])
 
 
@@ -430,11 +438,16 @@ def test_employee_fingerprints_maximum_10():
         emp.huellas = fps + [Fingerprint(0, "extra")]
 
     # Intentar asignar elemento que no es Fingerprint
-    with pytest.raises(ValidationError, match="Cada elemento de la lista de huellas debe ser una instancia de Fingerprint"):
+    with pytest.raises(
+        ValidationError,
+        match="Cada elemento de la lista de huellas debe ser una instancia de Fingerprint",
+    ):
         emp.huellas = [Fingerprint(0, "t"), "no_es_fingerprint"]  # type: ignore
 
     # Intentar agregar huella no instancia
-    with pytest.raises(ValidationError, match="El objeto a agregar debe ser una instancia de Fingerprint"):
+    with pytest.raises(
+        ValidationError, match="El objeto a agregar debe ser una instancia de Fingerprint"
+    ):
         emp.add_fingerprint("invalido")  # type: ignore
 
 

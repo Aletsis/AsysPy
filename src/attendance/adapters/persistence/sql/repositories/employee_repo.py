@@ -41,7 +41,6 @@ class SqlEmployeeRepository(EmployeeRepository):
                 existing.sex = employee.sex.value
                 existing.department_id = employee.department_id
                 existing.position_id = employee.position_id
-                existing.position = employee.position
                 existing.home_branch_id = employee.home_branch_id
                 existing.active = employee.active
                 existing.email = employee.email
@@ -56,7 +55,9 @@ class SqlEmployeeRepository(EmployeeRepository):
                 session.add(model)
 
             # Sincronizar huellas asociadas
-            del_stmt = delete(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == employee.pin)
+            del_stmt = delete(EmployeeFingerprintModel).where(
+                EmployeeFingerprintModel.employee_pin == employee.pin
+            )
             session.execute(del_stmt)
             for fp in employee.fingerprints:
                 session.add(fingerprint_to_model(fp, employee.pin))
@@ -168,7 +169,9 @@ class SqlEmployeeRepository(EmployeeRepository):
                 stmt = stmt.where(EmployeeModel.department_id == department_id)
             if position_id is not None:
                 stmt = stmt.where(EmployeeModel.position_id == position_id)
-            stmt = stmt.order_by(EmployeeModel.paternal_last_name.asc(), EmployeeModel.first_name.asc())
+            stmt = stmt.order_by(
+                EmployeeModel.paternal_last_name.asc(), EmployeeModel.first_name.asc()
+            )
             models: Sequence[EmployeeModel] = session.scalars(stmt).all()
             return [employee_to_domain(m) for m in models]
 
@@ -197,7 +200,9 @@ class SqlEmployeeRepository(EmployeeRepository):
             stmt = select(EmployeeModel).where(EmployeeModel.pin == pin)
             model = session.scalars(stmt).first()
             if model:
-                del_fps = delete(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == pin)
+                del_fps = delete(EmployeeFingerprintModel).where(
+                    EmployeeFingerprintModel.employee_pin == pin
+                )
                 session.execute(del_fps)
                 session.delete(model)
                 session.commit()
@@ -208,7 +213,9 @@ class SqlEmployeeRepository(EmployeeRepository):
         with self.session_factory() as session:
             model = session.get(EmployeeModel, employee_id)
             if model:
-                del_fps = delete(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == model.pin)
+                del_fps = delete(EmployeeFingerprintModel).where(
+                    EmployeeFingerprintModel.employee_pin == model.pin
+                )
                 session.execute(del_fps)
                 session.delete(model)
                 session.commit()

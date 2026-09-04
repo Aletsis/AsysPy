@@ -48,8 +48,6 @@ def test_factory_creates_sqlite_bundle() -> None:
     assert bundle.database is not None
 
 
-
-
 def test_factory_missing_optional_driver_raises_helpful_error() -> None:
     # Verificamos que si se pide postgres o mongo y falta la librería se notifique con instrucción de instalación
     with pytest.raises(RuntimeError) as exc_info:
@@ -75,7 +73,6 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Agente",
         home_branch_id=1,
         active=True,
     )
@@ -100,7 +97,13 @@ def test_end_to_end_use_case_with_sql_bundle() -> None:
         mode=AssignmentMode.FIXED,
         valid_from=date(2026, 1, 1),
         shift_definition_id=saved_shift.id,
-        working_weekdays={Weekday.MONDAY, Weekday.TUESDAY, Weekday.WEDNESDAY, Weekday.THURSDAY, Weekday.FRIDAY},
+        working_weekdays={
+            Weekday.MONDAY,
+            Weekday.TUESDAY,
+            Weekday.WEDNESDAY,
+            Weekday.THURSDAY,
+            Weekday.FRIDAY,
+        },
     )
     bundle.schedule_assignment_repo.save(assignment)
 
@@ -239,4 +242,3 @@ def test_end_to_end_device_sync_with_sql_bundle() -> None:
     # 5. Verificar marca de agua actualizada en SQL
     last_uid = bundle.sync_state_repo.get_last_synced_uid(dev_id)
     assert last_uid == 2
-

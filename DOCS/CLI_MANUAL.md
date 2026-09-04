@@ -398,7 +398,6 @@ asistpy employee add \
   --hire-date 2024-03-15 \
   --sex male \
   --position-id 1 \
-  --position "Operador CNC" \
   --department-id 2 \
   --branch-id 1 \
   --email "carlos.gomez@empresa.com" \
@@ -500,7 +499,7 @@ asistpy employee edit \
   --card-number "CARD-2002"
 
 # Cambiar de puesto y departamento
-asistpy employee edit --pin "E101" --position-id 2 --position "Supervisor de Turno" --department-id 1
+asistpy employee edit --pin "E101" --position-id 2 --department-id 1
 
 # Dar de baja (inactivar)
 asistpy employee edit --pin "E101" --inactive

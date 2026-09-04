@@ -7,10 +7,25 @@ from attendance.adapters.persistence.factory import PersistenceFactory
 
 
 def test_cli_branch_crud(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # 1. Add
-        code = main(["branch", "add", "--name", "Sucursal Centro", "--code", "CEN-01", "--city", "Monterrey", "--state", "NL"])
+        code = main(
+            [
+                "branch",
+                "add",
+                "--name",
+                "Sucursal Centro",
+                "--code",
+                "CEN-01",
+                "--city",
+                "Monterrey",
+                "--state",
+                "NL",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "registrada exitosamente" in out
@@ -31,7 +46,17 @@ def test_cli_branch_crud(capsys) -> None:
         assert "Total sucursales: 1" in out
 
         # 4. Edit
-        code = main(["branch", "edit", "--code", "CEN-01", "--name", "Sucursal Centro Histórico", "--inactive"])
+        code = main(
+            [
+                "branch",
+                "edit",
+                "--code",
+                "CEN-01",
+                "--name",
+                "Sucursal Centro Histórico",
+                "--inactive",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "actualizada exitosamente" in out
@@ -54,28 +79,58 @@ def test_cli_branch_crud(capsys) -> None:
 
 
 def test_cli_employee_crud(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
+        # Setup positions
+        main(["position", "add", "--name", "Supervisora", "--code", "SUP-01"])
+        main(["position", "add", "--name", "Gerente de Planta", "--code", "GER-01"])
+        capsys.readouterr()
+
         # 1. Add
-        code = main([
-            "employee", "add",
-            "--pin", "E200",
-            "--first-name", "Laura",
-            "--paternal-last-name", "Martinez",
-            "--maternal-last-name", "Soto",
-            "--hire-date", "2025-06-01",
-            "--sex", "female",
-            "--position", "Supervisora",
-            "--department-id", "2",
-            "--branch-id", "1",
-        ])
+        code = main(
+            [
+                "employee",
+                "add",
+                "--pin",
+                "E200",
+                "--first-name",
+                "Laura",
+                "--paternal-last-name",
+                "Martinez",
+                "--maternal-last-name",
+                "Soto",
+                "--hire-date",
+                "2025-06-01",
+                "--sex",
+                "female",
+                "--position-id",
+                "1",
+                "--department-id",
+                "2",
+                "--branch-id",
+                "1",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "registrado exitosamente" in out
         assert "E200" in out
 
         # Add duplicate should fail
-        code = main(["employee", "add", "--pin", "E200", "--first-name", "Laura", "--paternal-last-name", "Martinez"])
+        code = main(
+            [
+                "employee",
+                "add",
+                "--pin",
+                "E200",
+                "--first-name",
+                "Laura",
+                "--paternal-last-name",
+                "Martinez",
+            ]
+        )
         assert code == 1
         capsys.readouterr()
 
@@ -94,7 +149,7 @@ def test_cli_employee_crud(capsys) -> None:
         assert "Total empleados: 1" in out
 
         # 4. Edit
-        code = main(["employee", "edit", "--pin", "E200", "--position", "Gerente de Planta", "--inactive"])
+        code = main(["employee", "edit", "--pin", "E200", "--position-id", "2", "--inactive"])
         assert code == 0
         out = capsys.readouterr().out
         assert "actualizado exitosamente" in out
@@ -116,18 +171,28 @@ def test_cli_employee_crud(capsys) -> None:
 
 
 def test_cli_shift_crud(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # 1. Add
-        code = main([
-            "shift", "add",
-            "--name", "Turno Nocturno",
-            "--start-time", "22:00",
-            "--end-time", "06:00",
-            "--tolerance", "10",
-            "--crosses-midnight",
-            "--category", "nocturno",
-        ])
+        code = main(
+            [
+                "shift",
+                "add",
+                "--name",
+                "Turno Nocturno",
+                "--start-time",
+                "22:00",
+                "--end-time",
+                "06:00",
+                "--tolerance",
+                "10",
+                "--crosses-midnight",
+                "--category",
+                "nocturno",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "Turno Nocturno" in out
@@ -150,7 +215,9 @@ def test_cli_shift_crud(capsys) -> None:
         assert "Total turnos: 1" in out
 
         # 4. Edit
-        code = main(["shift", "edit", "--shift-id", "1", "--name", "Nocturno Avanzado", "--tolerance", "15"])
+        code = main(
+            ["shift", "edit", "--shift-id", "1", "--name", "Nocturno Avanzado", "--tolerance", "15"]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "actualizado exitosamente" in out
@@ -172,43 +239,67 @@ def test_cli_shift_crud(capsys) -> None:
 
 
 def test_cli_shift_categories_all(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # Test regular (from CLI manual)
-        code = main([
-            "shift", "add",
-            "--name", "Matutino 8-16",
-            "--start-time", "08:00",
-            "--end-time", "16:00",
-            "--tolerance", "15",
-            "--category", "regular",
-        ])
+        code = main(
+            [
+                "shift",
+                "add",
+                "--name",
+                "Matutino 8-16",
+                "--start-time",
+                "08:00",
+                "--end-time",
+                "16:00",
+                "--tolerance",
+                "15",
+                "--category",
+                "regular",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "Matutino 8-16" in out
         assert "regular" in out
 
         # Test partido
-        code = main([
-            "shift", "add",
-            "--name", "Turno Partido",
-            "--start-time", "09:00",
-            "--end-time", "18:00",
-            "--category", "partido",
-        ])
+        code = main(
+            [
+                "shift",
+                "add",
+                "--name",
+                "Turno Partido",
+                "--start-time",
+                "09:00",
+                "--end-time",
+                "18:00",
+                "--category",
+                "partido",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "Turno Partido" in out
         assert "partido" in out
 
         # Test matutino
-        code = main([
-            "shift", "add",
-            "--name", "Turno Matutino Puro",
-            "--start-time", "06:00",
-            "--end-time", "14:00",
-            "--category", "matutino",
-        ])
+        code = main(
+            [
+                "shift",
+                "add",
+                "--name",
+                "Turno Matutino Puro",
+                "--start-time",
+                "06:00",
+                "--end-time",
+                "14:00",
+                "--category",
+                "matutino",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "matutino" in out
@@ -224,21 +315,41 @@ def test_cli_shift_categories_all(capsys) -> None:
 
 
 def test_cli_schedule_crud(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # Setup employee and shift
-        main(["employee", "add", "--pin", "E300", "--first-name", "Pedro", "--paternal-last-name", "Ramirez"])
+        main(
+            [
+                "employee",
+                "add",
+                "--pin",
+                "E300",
+                "--first-name",
+                "Pedro",
+                "--paternal-last-name",
+                "Ramirez",
+            ]
+        )
         main(["shift", "add", "--name", "Matutino", "--start-time", "08:00", "--end-time", "16:00"])
         capsys.readouterr()
 
         # 1. Assign
-        code = main([
-            "schedule", "assign",
-            "--employee-pin", "E300",
-            "--shift-id", "1",
-            "--mode", "fixed",
-            "--valid-from", "2026-09-01",
-        ])
+        code = main(
+            [
+                "schedule",
+                "assign",
+                "--employee-pin",
+                "E300",
+                "--shift-id",
+                "1",
+                "--mode",
+                "fixed",
+                "--valid-from",
+                "2026-09-01",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "Horario asignado exitosamente" in out
@@ -277,18 +388,29 @@ def test_cli_schedule_crud(capsys) -> None:
 
 
 def test_cli_device_crud(capsys) -> None:
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # 1. Add
-        code = main([
-            "device", "add",
-            "--name", "Reloj Acceso Norte",
-            "--ip", "192.168.1.150",
-            "--port", "4370",
-            "--branch-id", "1",
-            "--serial", "SN-998877",
-            "--location", "Caseta Norte",
-        ])
+        code = main(
+            [
+                "device",
+                "add",
+                "--name",
+                "Reloj Acceso Norte",
+                "--ip",
+                "192.168.1.150",
+                "--port",
+                "4370",
+                "--branch-id",
+                "1",
+                "--serial",
+                "SN-998877",
+                "--location",
+                "Caseta Norte",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "registrado exitosamente" in out
@@ -310,7 +432,17 @@ def test_cli_device_crud(capsys) -> None:
         assert "Total dispositivos: 1" in out
 
         # 4. Edit
-        code = main(["device", "edit", "--device-id", "1", "--name", "Reloj Acceso Norte Renovado", "--inactive"])
+        code = main(
+            [
+                "device",
+                "edit",
+                "--device-id",
+                "1",
+                "--name",
+                "Reloj Acceso Norte Renovado",
+                "--inactive",
+            ]
+        )
         assert code == 0
         out = capsys.readouterr().out
         assert "actualizado exitosamente" in out
@@ -333,37 +465,122 @@ def test_cli_device_crud(capsys) -> None:
 
 def test_cli_catalogs_full_e2e_flow(capsys) -> None:
     """Flujo completo E2E: sucursal -> empleado -> turno -> horario -> dispositivo -> marcación -> evaluación."""
-    bundle = PersistenceFactory.create_bundle(backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True)
+    bundle = PersistenceFactory.create_bundle(
+        backend="sqlite", connection_string="sqlite:///:memory:", init_tables=True
+    )
     with patch("attendance.adapters.cli.context.CLIContext.get_bundle", return_value=bundle):
         # 1. Sucursal
         assert main(["branch", "add", "--name", "Planta Principal", "--code", "PLT-01"]) == 0
 
         # 2. Empleado
-        assert main(["employee", "add", "--pin", "OP100", "--first-name", "Juan", "--paternal-last-name", "Perez", "--branch-id", "1"]) == 0
+        assert (
+            main(
+                [
+                    "employee",
+                    "add",
+                    "--pin",
+                    "OP100",
+                    "--first-name",
+                    "Juan",
+                    "--paternal-last-name",
+                    "Perez",
+                    "--branch-id",
+                    "1",
+                ]
+            )
+            == 0
+        )
 
         # 3. Turno
-        assert main(["shift", "add", "--name", "Diurno", "--start-time", "08:00", "--end-time", "16:00", "--tolerance", "15"]) == 0
+        assert (
+            main(
+                [
+                    "shift",
+                    "add",
+                    "--name",
+                    "Diurno",
+                    "--start-time",
+                    "08:00",
+                    "--end-time",
+                    "16:00",
+                    "--tolerance",
+                    "15",
+                ]
+            )
+            == 0
+        )
 
         # 4. Asignar horario
-        assert main(["schedule", "assign", "--employee-pin", "OP100", "--shift-id", "1", "--valid-from", "2026-09-01"]) == 0
+        assert (
+            main(
+                [
+                    "schedule",
+                    "assign",
+                    "--employee-pin",
+                    "OP100",
+                    "--shift-id",
+                    "1",
+                    "--valid-from",
+                    "2026-09-01",
+                ]
+            )
+            == 0
+        )
 
         # 5. Dispositivo
         assert main(["device", "add", "--name", "Reloj Planta", "--ip", "192.168.1.100"]) == 0
 
         # 6. Registrar marcaciones manuales (ajuste con auditoría)
-        assert main(["attendance", "adjust", "--employee-pin", "OP100", "--timestamp", "2026-09-02 08:05:00", "--reason", "Entrada en caseta", "--modified-by", "admin"]) == 0
-        assert main(["attendance", "adjust", "--employee-pin", "OP100", "--timestamp", "2026-09-02 16:02:00", "--reason", "Salida normal", "--modified-by", "admin"]) == 0
+        assert (
+            main(
+                [
+                    "attendance",
+                    "adjust",
+                    "--employee-pin",
+                    "OP100",
+                    "--timestamp",
+                    "2026-09-02 08:05:00",
+                    "--reason",
+                    "Entrada en caseta",
+                    "--modified-by",
+                    "admin",
+                ]
+            )
+            == 0
+        )
+        assert (
+            main(
+                [
+                    "attendance",
+                    "adjust",
+                    "--employee-pin",
+                    "OP100",
+                    "--timestamp",
+                    "2026-09-02 16:02:00",
+                    "--reason",
+                    "Salida normal",
+                    "--modified-by",
+                    "admin",
+                ]
+            )
+            == 0
+        )
 
         # 7. Evaluar jornada del empleado
         capsys.readouterr()
-        assert main(["attendance", "evaluate", "--employee-pin", "OP100", "--date", "2026-09-02"]) == 0
+        assert (
+            main(["attendance", "evaluate", "--employee-pin", "OP100", "--date", "2026-09-02"]) == 0
+        )
         out = capsys.readouterr().out
         assert "OP100" in out
         assert "PRESENTE" in out
         assert "Diurno" in out
 
         # 8. Reporte consolidado
-        assert main(["report", "summary", "--start-date", "2026-09-01", "--end-date", "2026-09-05"]) == 0
+        assert (
+            main(["report", "summary", "--start-date", "2026-09-01", "--end-date", "2026-09-05"])
+            == 0
+        )
         report_out = capsys.readouterr().out
         assert "OP100" in report_out
         assert "present" in report_out.lower()

@@ -89,8 +89,12 @@ def test_catalog_shifts_crud(sql_bundle) -> None:
         name="Turno Partido",
         category=ShiftCategory.MIXTO,
         segments=[
-            ShiftSegment(start_time=time(9, 0), end_time=time(13, 0), tolerance_minutes=10, name="Turno 1"),
-            ShiftSegment(start_time=time(15, 0), end_time=time(19, 0), tolerance_minutes=5, name="Turno 2"),
+            ShiftSegment(
+                start_time=time(9, 0), end_time=time(13, 0), tolerance_minutes=10, name="Turno 1"
+            ),
+            ShiftSegment(
+                start_time=time(15, 0), end_time=time(19, 0), tolerance_minutes=5, name="Turno 2"
+            ),
         ],
     )
     s_split = repo.save(split)
@@ -119,8 +123,25 @@ def test_catalog_rotation_patterns_crud(sql_bundle) -> None:
     shift_repo = sql_bundle.shift_repo
 
     # Crear turnos de referencia
-    s1 = shift_repo.save(ShiftDefinition(id=None, name="Turno 1", category=ShiftCategory.MATUTINO, start_time=time(8, 0), end_time=time(16, 0)))
-    s2 = shift_repo.save(ShiftDefinition(id=None, name="Turno 2", category=ShiftCategory.VESPERTINO, start_time=time(16, 0), end_time=time(0, 0), crosses_midnight=True))
+    s1 = shift_repo.save(
+        ShiftDefinition(
+            id=None,
+            name="Turno 1",
+            category=ShiftCategory.MATUTINO,
+            start_time=time(8, 0),
+            end_time=time(16, 0),
+        )
+    )
+    s2 = shift_repo.save(
+        ShiftDefinition(
+            id=None,
+            name="Turno 2",
+            category=ShiftCategory.VESPERTINO,
+            start_time=time(16, 0),
+            end_time=time(0, 0),
+            crosses_midnight=True,
+        )
+    )
 
     # 1. Patrón 24x48 (1 día de guardia 24h, 2 días de descanso)
     pattern_24x48 = RotationPattern(
@@ -194,7 +215,6 @@ def test_process_daily_attendance_with_24x48_rotation_from_sql_db(sql_bundle) ->
             hire_date=date(2025, 1, 1),
             sex=Sex.MALE,
             department_id=1,
-            position="Médico de Urgencias",
             home_branch_id=1,
             active=True,
         )

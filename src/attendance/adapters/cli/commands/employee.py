@@ -15,7 +15,9 @@ def _parse_date(date_str: str) -> date:
     try:
         return date.fromisoformat(date_str)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Formato de fecha inválido: '{date_str}'. Use YYYY-MM-DD.")
+        raise argparse.ArgumentTypeError(
+            f"Formato de fecha inválido: '{date_str}'. Use YYYY-MM-DD."
+        )
 
 
 def _find_employee(args: argparse.Namespace, bundle) -> Employee | None:
@@ -33,18 +35,15 @@ def cmd_employee_add(args: argparse.Namespace, ctx: CLIContext) -> int:
 
     existing = bundle.employee_repo.get_by_pin(args.pin)
     if existing:
-        print(f"{red('✘ Error:')} Ya existe un empleado registrado con el PIN '{args.pin}'.", file=sys.stderr)
+        print(
+            f"{red('✘ Error:')} Ya existe un empleado registrado con el PIN '{args.pin}'.",
+            file=sys.stderr,
+        )
         return 1
 
     phone = args.phone if getattr(args, "phone", None) else getattr(args, "phone_number", None)
     hire_date = _parse_date(args.hire_date) if args.hire_date else date.today()
     sex = Sex(args.sex.lower()) if args.sex else Sex.MALE
-
-    position_name = args.position or "General"
-    if args.position_id and bundle.position_repo and (not args.position or args.position == "General"):
-        pos_obj = bundle.position_repo.get_by_id(args.position_id)
-        if pos_obj:
-            position_name = pos_obj.name
 
     try:
         emp = Employee(
@@ -57,7 +56,6 @@ def cmd_employee_add(args: argparse.Namespace, ctx: CLIContext) -> int:
             sex=sex,
             department_id=args.department_id or 1,
             position_id=args.position_id,
-            position=position_name,
             home_branch_id=args.branch_id or 1,
             active=not args.inactive,
             email=args.email,
@@ -72,24 +70,58 @@ def cmd_employee_add(args: argparse.Namespace, ctx: CLIContext) -> int:
         print(f"{red('✘ Error de validación:')} {e}", file=sys.stderr)
         return 1
 
-    print(f"\n{green('✔')} Empleado {bold(saved.full_name)} (PIN: {saved.pin}) registrado exitosamente con ID {saved.id}.")
-    headers = ["ID", "PIN", "Nombre Completo", "Puesto", "Depto ID", "Sucursal ID", "CURP", "Tarjeta", "Estado"]
-    rows = [[
-        str(saved.id or "-"),
-        saved.pin,
-        saved.full_name,
-        f"{saved.position} (ID:{saved.position_id})" if saved.position_id else saved.position,
-        str(saved.department_id),
-        str(saved.home_branch_id),
-        saved.curp or "-",
-        saved.card_number or "-",
-        green("Activo") if saved.active else red("Inactivo"),
-    ]]
-    print(render_table(
-        headers=headers,
-        rows=rows,
-        alignments=["right", "left", "left", "left", "center", "center", "left", "left", "center"],
-    ))
+    pos_name = "-"
+    if saved.position_id and bundle.position_repo:
+        pos_obj = bundle.position_repo.get_by_id(saved.position_id)
+        if pos_obj:
+            pos_name = f"{pos_obj.name} (ID:{saved.position_id})"
+        else:
+            pos_name = f"ID:{saved.position_id}"
+
+    print(
+        f"\n{green('✔')} Empleado {bold(saved.full_name)} (PIN: {saved.pin}) registrado exitosamente con ID {saved.id}."
+    )
+    headers = [
+        "ID",
+        "PIN",
+        "Nombre Completo",
+        "Puesto",
+        "Depto ID",
+        "Sucursal ID",
+        "CURP",
+        "Tarjeta",
+        "Estado",
+    ]
+    rows = [
+        [
+            str(saved.id or "-"),
+            saved.pin,
+            saved.full_name,
+            pos_name,
+            str(saved.department_id),
+            str(saved.home_branch_id),
+            saved.curp or "-",
+            saved.card_number or "-",
+            green("Activo") if saved.active else red("Inactivo"),
+        ]
+    ]
+    print(
+        render_table(
+            headers=headers,
+            rows=rows,
+            alignments=[
+                "right",
+                "left",
+                "left",
+                "left",
+                "center",
+                "center",
+                "left",
+                "left",
+                "center",
+            ],
+        )
+    )
     return 0
 
 
@@ -105,6 +137,12 @@ def cmd_employee_show(args: argparse.Namespace, ctx: CLIContext) -> int:
     pwd_display = "********" if emp.password else "-"
     fingerprints_display = f"{len(emp.fingerprints)} registrada(s)" if emp.fingerprints else "0"
 
+    pos_name = "-"
+    if emp.position_id is not None and bundle.position_repo:
+        pos_obj = bundle.position_repo.get_by_id(emp.position_id)
+        if pos_obj:
+            pos_name = pos_obj.name
+
     rows = [
         ["ID", str(emp.id or "-")],
         ["PIN / Identificador", emp.pin],
@@ -114,7 +152,7 @@ def cmd_employee_show(args: argparse.Namespace, ctx: CLIContext) -> int:
         ["Apellido Materno", emp.maternal_last_name or "-"],
         ["Fecha de Contratación", emp.hire_date.isoformat()],
         ["Sexo", emp.sex.value],
-        ["Puesto / Cargo", emp.position],
+        ["Puesto / Cargo", pos_name],
         ["Puesto ID", str(emp.position_id) if emp.position_id is not None else "-"],
         ["Departamento ID", str(emp.department_id)],
         ["Sucursal Base ID", str(emp.home_branch_id)],
@@ -147,24 +185,49 @@ def cmd_employee_list(args: argparse.Namespace, ctx: CLIContext) -> int:
         employees = [e for e in employees if args.pin in e.pin]
 
     if not employees:
-        print(f"{yellow('No se encontraron empleados registrados con los criterios seleccionados.')}")
+        print(
+            f"{yellow('No se encontraron empleados registrados con los criterios seleccionados.')}"
+        )
         return 0
 
-    headers = ["ID", "PIN", "Nombre Completo", "Puesto", "Depto", "Sucursal", "Fecha Ingreso", "Estado"]
+    pos_map = {}
+    if bundle.position_repo:
+        try:
+            pos_map = {p.id: p.name for p in bundle.position_repo.list_all()}
+        except Exception:
+            pass
+
+    headers = [
+        "ID",
+        "PIN",
+        "Nombre Completo",
+        "Puesto",
+        "Depto",
+        "Sucursal",
+        "Fecha Ingreso",
+        "Estado",
+    ]
     rows = []
     for e in employees:
         status_str = green("Activo") if e.active else red("Inactivo")
-        pos_str = f"{e.position} (#{e.position_id})" if e.position_id else e.position
-        rows.append([
-            str(e.id or "-"),
-            e.pin,
-            e.full_name,
-            pos_str,
-            str(e.department_id),
-            str(e.home_branch_id),
-            e.hire_date.isoformat(),
-            status_str,
-        ])
+        if e.position_id and e.position_id in pos_map:
+            pos_str = f"{pos_map[e.position_id]} (#{e.position_id})"
+        elif e.position_id:
+            pos_str = f"Puesto #{e.position_id}"
+        else:
+            pos_str = "-"
+        rows.append(
+            [
+                str(e.id or "-"),
+                e.pin,
+                e.full_name,
+                pos_str,
+                str(e.department_id),
+                str(e.home_branch_id),
+                e.hire_date.isoformat(),
+                status_str,
+            ]
+        )
 
     table = render_table(
         headers=headers,
@@ -192,14 +255,8 @@ def cmd_employee_edit(args: argparse.Namespace, ctx: CLIContext) -> int:
             emp.paternal_last_name = args.paternal_last_name
         if args.maternal_last_name is not None:
             emp.maternal_last_name = args.maternal_last_name
-        if args.position is not None:
-            emp.position = args.position
         if args.position_id is not None:
             emp.position_id = args.position_id
-            if bundle.position_repo and args.position is None:
-                pos_obj = bundle.position_repo.get_by_id(args.position_id)
-                if pos_obj:
-                    emp.position = pos_obj.name
         if args.department_id is not None:
             emp.department_id = args.department_id
         if args.branch_id is not None:
@@ -231,7 +288,9 @@ def cmd_employee_edit(args: argparse.Namespace, ctx: CLIContext) -> int:
         print(f"{red('✘ Error de validación:')} {err}", file=sys.stderr)
         return 1
 
-    print(f"\n{green('✔')} Empleado {bold(saved.full_name)} (PIN: {saved.pin}) actualizado exitosamente.")
+    print(
+        f"\n{green('✔')} Empleado {bold(saved.full_name)} (PIN: {saved.pin}) actualizado exitosamente."
+    )
     return 0
 
 
@@ -246,10 +305,15 @@ def cmd_employee_delete(args: argparse.Namespace, ctx: CLIContext) -> int:
 
     success = bundle.employee_repo.delete(emp.pin)
     if success:
-        print(f"\n{green('✔')} Empleado '{bold(emp.full_name)}' (PIN: {emp.pin}) eliminado correctamente.")
+        print(
+            f"\n{green('✔')} Empleado '{bold(emp.full_name)}' (PIN: {emp.pin}) eliminado correctamente."
+        )
         return 0
     else:
-        print(f"{red('✘ Error:')} No se pudo eliminar el empleado con PIN '{emp.pin}'.", file=sys.stderr)
+        print(
+            f"{red('✘ Error:')} No se pudo eliminar el empleado con PIN '{emp.pin}'.",
+            file=sys.stderr,
+        )
         return 1
 
 
@@ -268,23 +332,38 @@ def register_employee_subparser(subparsers: argparse._SubParsersAction) -> None:
         parents=[get_common_parser()],
         help="Registra un nuevo empleado",
     )
-    add_parser.add_argument("--pin", required=True, help="PIN o identificador único del empleado (ej. 'E100')")
+    add_parser.add_argument(
+        "--pin", required=True, help="PIN o identificador único del empleado (ej. 'E100')"
+    )
     add_parser.add_argument("--first-name", required=True, help="Nombre de pila del empleado")
     add_parser.add_argument("--paternal-last-name", required=True, help="Apellido paterno")
     add_parser.add_argument("--maternal-last-name", help="Apellido materno (opcional)")
     add_parser.add_argument("--hire-date", help="Fecha de ingreso YYYY-MM-DD (predeterminada: hoy)")
-    add_parser.add_argument("--sex", choices=["male", "female"], default="male", help="Sexo (predeterminado: male)")
-    add_parser.add_argument("--position", default="General", help="Cargo o puesto laboral")
-    add_parser.add_argument("--position-id", type=int, help="ID de puesto laboral del catálogo de puestos")
-    add_parser.add_argument("--department-id", type=int, default=1, help="ID de departamento (predeterminado: 1)")
-    add_parser.add_argument("--branch-id", type=int, default=1, help="ID de sucursal base (predeterminado: 1)")
+    add_parser.add_argument(
+        "--sex", choices=["male", "female"], default="male", help="Sexo (predeterminado: male)"
+    )
+    add_parser.add_argument(
+        "--position-id", type=int, help="ID de puesto laboral del catálogo de puestos"
+    )
+    add_parser.add_argument(
+        "--department-id", type=int, default=1, help="ID de departamento (predeterminado: 1)"
+    )
+    add_parser.add_argument(
+        "--branch-id", type=int, default=1, help="ID de sucursal base (predeterminado: 1)"
+    )
     add_parser.add_argument("--email", help="Correo electrónico de contacto del empleado")
-    add_parser.add_argument("--phone", "--phone-number", dest="phone", help="Número telefónico de contacto")
+    add_parser.add_argument(
+        "--phone", "--phone-number", dest="phone", help="Número telefónico de contacto"
+    )
     add_parser.add_argument("--curp", help="CURP del empleado (18 caracteres)")
     add_parser.add_argument("--rfc", help="RFC del empleado (12 o 13 caracteres)")
-    add_parser.add_argument("--password", help="Contraseña o clave numérica de acceso en dispositivo")
+    add_parser.add_argument(
+        "--password", help="Contraseña o clave numérica de acceso en dispositivo"
+    )
     add_parser.add_argument("--card-number", help="Número de tarjeta de proximidad / RFID")
-    add_parser.add_argument("--inactive", action="store_true", help="Registrar el empleado como inactivo")
+    add_parser.add_argument(
+        "--inactive", action="store_true", help="Registrar el empleado como inactivo"
+    )
     add_parser.set_defaults(func=cmd_employee_add)
 
     # asistpy employee show
@@ -295,7 +374,13 @@ def register_employee_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     show_group = show_parser.add_mutually_exclusive_group(required=True)
     show_group.add_argument("--pin", help="PIN del empleado a consultar")
-    show_group.add_argument("--employee-id", "--id", type=int, dest="employee_id", help="ID interno del empleado a consultar")
+    show_group.add_argument(
+        "--employee-id",
+        "--id",
+        type=int,
+        dest="employee_id",
+        help="ID interno del empleado a consultar",
+    )
     show_parser.set_defaults(func=cmd_employee_show)
 
     # asistpy employee edit
@@ -306,16 +391,23 @@ def register_employee_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     edit_ident = edit_parser.add_mutually_exclusive_group(required=True)
     edit_ident.add_argument("--pin", help="PIN del empleado a modificar")
-    edit_ident.add_argument("--employee-id", "--id", type=int, dest="employee_id", help="ID interno del empleado a modificar")
+    edit_ident.add_argument(
+        "--employee-id",
+        "--id",
+        type=int,
+        dest="employee_id",
+        help="ID interno del empleado a modificar",
+    )
     edit_parser.add_argument("--first-name", help="Nuevo nombre de pila")
     edit_parser.add_argument("--paternal-last-name", help="Nuevo apellido paterno")
     edit_parser.add_argument("--maternal-last-name", help="Nuevo apellido materno")
-    edit_parser.add_argument("--position", help="Nuevo cargo o puesto")
     edit_parser.add_argument("--position-id", type=int, help="Nuevo ID de puesto del catálogo")
     edit_parser.add_argument("--department-id", type=int, help="Nuevo ID de departamento")
     edit_parser.add_argument("--branch-id", type=int, help="Nuevo ID de sucursal")
     edit_parser.add_argument("--email", help="Nuevo correo electrónico de contacto")
-    edit_parser.add_argument("--phone", "--phone-number", dest="phone", help="Nuevo número telefónico")
+    edit_parser.add_argument(
+        "--phone", "--phone-number", dest="phone", help="Nuevo número telefónico"
+    )
     edit_parser.add_argument("--curp", help="Nueva CURP")
     edit_parser.add_argument("--rfc", help="Nuevo RFC")
     edit_parser.add_argument("--password", help="Nueva clave numérica o contraseña de dispositivo")
@@ -335,8 +427,16 @@ def register_employee_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     del_ident = del_parser.add_mutually_exclusive_group(required=True)
     del_ident.add_argument("--pin", help="PIN del empleado a eliminar")
-    del_ident.add_argument("--employee-id", "--id", type=int, dest="employee_id", help="ID interno del empleado a eliminar")
-    del_parser.add_argument("--force", action="store_true", help="Confirmar eliminación sin confirmación interactiva")
+    del_ident.add_argument(
+        "--employee-id",
+        "--id",
+        type=int,
+        dest="employee_id",
+        help="ID interno del empleado a eliminar",
+    )
+    del_parser.add_argument(
+        "--force", action="store_true", help="Confirmar eliminación sin confirmación interactiva"
+    )
     del_parser.set_defaults(func=cmd_employee_delete)
 
     # asistpy employee list
@@ -348,6 +448,8 @@ def register_employee_subparser(subparsers: argparse._SubParsersAction) -> None:
     list_parser.add_argument("--branch-id", type=int, help="Filtrar por ID de sucursal")
     list_parser.add_argument("--department-id", type=int, help="Filtrar por ID de departamento")
     list_parser.add_argument("--position-id", type=int, help="Filtrar por ID de puesto laboral")
-    list_parser.add_argument("--active-only", action="store_true", help="Mostrar solo empleados activos")
+    list_parser.add_argument(
+        "--active-only", action="store_true", help="Mostrar solo empleados activos"
+    )
     list_parser.add_argument("--pin", help="Filtrar por coincidencia de PIN")
     list_parser.set_defaults(func=cmd_employee_list)

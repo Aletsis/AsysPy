@@ -106,7 +106,6 @@ def test_sql_employee_repository(session_factory: sessionmaker[Session]) -> None
         hire_date=date(2025, 1, 15),
         sex=Sex.MALE,
         department_id=2,
-        position="Desarrollador",
         home_branch_id=10,
         active=True,
     )
@@ -155,9 +154,7 @@ def test_sql_daily_attendance_repository(session_factory: sessionmaker[Session])
         start_time=time(9, 0),
         end_time=time(18, 0),
         tolerance_minutes=10,
-        segments=[
-            ShiftSegment(start_time=time(9, 0), end_time=time(18, 0), tolerance_minutes=10)
-        ],
+        segments=[ShiftSegment(start_time=time(9, 0), end_time=time(18, 0), tolerance_minutes=10)],
     )
 
     session1 = WorkSession(
@@ -433,8 +430,12 @@ def test_sql_shift_repository(session_factory: sessionmaker[Session]) -> None:
         name="Comercio Partido",
         category=ShiftCategory.MIXTO,
         segments=[
-            ShiftSegment(start_time=time(9, 0), end_time=time(14, 0), tolerance_minutes=10, name="Mañana"),
-            ShiftSegment(start_time=time(16, 0), end_time=time(19, 0), tolerance_minutes=5, name="Tarde"),
+            ShiftSegment(
+                start_time=time(9, 0), end_time=time(14, 0), tolerance_minutes=10, name="Mañana"
+            ),
+            ShiftSegment(
+                start_time=time(16, 0), end_time=time(19, 0), tolerance_minutes=5, name="Tarde"
+            ),
         ],
     )
     saved_split = repo.save(split_shift)
@@ -539,5 +540,3 @@ def test_sql_rotation_pattern_repository(session_factory: sessionmaker[Session])
     assert repo.get_by_id(p24_id) is None
     assert len(repo.list_all()) == 1
     assert repo.delete(9999) is False
-
-

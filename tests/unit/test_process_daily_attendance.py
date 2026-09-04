@@ -61,8 +61,12 @@ SPLIT_SHIFT = ShiftDefinition(
     name="Turno Partido 09-14 y 16-20",
     category=ShiftCategory.PERSONALIZADO,
     segments=[
-        ShiftSegment(start_time=time(9, 0), end_time=time(14, 0), tolerance_minutes=10, name="Matutino"),
-        ShiftSegment(start_time=time(16, 0), end_time=time(20, 0), tolerance_minutes=0, name="Vespertino"),
+        ShiftSegment(
+            start_time=time(9, 0), end_time=time(14, 0), tolerance_minutes=10, name="Matutino"
+        ),
+        ShiftSegment(
+            start_time=time(16, 0), end_time=time(20, 0), tolerance_minutes=0, name="Vespertino"
+        ),
     ],
 )
 
@@ -454,7 +458,6 @@ def test_process_daily_attendance_batch_for_branch():
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=10,
         active=True,
     )
@@ -467,7 +470,6 @@ def test_process_daily_attendance_batch_for_branch():
         hire_date=date(2025, 1, 1),
         sex=Sex.FEMALE,
         department_id=1,
-        position="Operadora",
         home_branch_id=10,
         active=True,
     )
@@ -480,7 +482,6 @@ def test_process_daily_attendance_batch_for_branch():
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=10,
         active=False,  # Inactivo
     )
@@ -1004,7 +1005,6 @@ def test_employee_repository_get_active_employees_contract():
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=10,
         active=True,
     )
@@ -1017,7 +1017,6 @@ def test_employee_repository_get_active_employees_contract():
         hire_date=date(2025, 1, 1),
         sex=Sex.FEMALE,
         department_id=1,
-        position="Operadora",
         home_branch_id=20,
         active=True,
     )
@@ -1030,7 +1029,6 @@ def test_employee_repository_get_active_employees_contract():
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=10,
         active=False,
     )
@@ -1058,7 +1056,6 @@ def test_process_daily_attendance_batch_class():
         hire_date=date(2025, 1, 1),
         sex=Sex.MALE,
         department_id=1,
-        position="Operador",
         home_branch_id=10,
         active=True,
     )
