@@ -577,44 +577,125 @@ asistpy shift delete --shift-id 1 --force
 
 ---
 
-## 📅 CRUD de Asignaciones de Horario (`asistpy schedule`)
+## 📅 CRUD de Asignaciones de Horario, Rotaciones y Eventualidades (`asistpy schedule`)
 
-Vincula los turnos a empleados específicos estableciendo fechas de vigencia y esquemas fijos o rotativos.
+Vincula los turnos a empleados específicos estableciendo fechas de vigencia, esquemas fijos con días de descanso definidos, patrones cíclicos rotativos (ej. 6x1, 4x3) y registro de eventualidades/excepciones por fecha.
 
-### 1. `asistpy schedule assign` (Crear / Asignar)
+---
+
+### A. Asignaciones de Horario (`set`, `assign`, `edit`, `show`, `list`, `close`, `delete`)
+
+#### 1. `asistpy schedule set` (Establecer Horario Completo con Previsualización)
+
+Es el comando unificado para configurar turnos y descansos de un colaborador. Soporta turnos fijos o rotativos, descansos fijos o rotativos (rolados que se recorren día con día, alternados, o ciclos NxM), previsualización en terminal y un modo asistente interactivo (`-i`):
+
 ```bash
-# Asignar turno fijo desde una fecha inicial
+# A) Turno fijo con descanso rolado (se recorre al siguiente día cada semana iniciando en domingo):
+asistpy schedule set \
+  --employee-pin "E101" \
+  --shift-id 1 \
+  --rolling-rest \
+  --rolling-start domingo \
+  --rolling-interval 1 \
+  --preview-days 21
+
+# B) Turnos rotativos semanales con descanso fijo en domingo:
+asistpy schedule set \
+  --employee-pin "E102" \
+  --rotating-shifts "1,2" \
+  --shift-freq weekly \
+  --rest-days domingo \
+  --preview-days 14
+
+# C) Esquema de ciclo continuo 6x1 (6 días trabajo continuo x 1 descanso):
+asistpy schedule set \
+  --employee-pin "E103" \
+  --shift-id 1 \
+  --cycle-rest "6x1"
+
+# D) Solo previsualizar proyección en consola sin modificar la base de datos:
+asistpy schedule set \
+  --employee-pin "E101" \
+  --shift-id 1 \
+  --rolling-rest \
+  --preview-only
+
+# E) Modo asistente interactivo guiado paso a paso:
+asistpy schedule set -i
+```
+
+**Salida con Previsualización en Consola:**
+```text
+📅 Proyección de Rol de Turnos (Próximos 14 días para Carlos Gómez):
+┌────────────┬───────────┬───────────────────────────────┬─────────────────┬───────────┐
+│ Fecha      │ Día       │ Turno Programado              │ Horario         │ Estado    │
+├────────────┼───────────┼───────────────────────────────┼─────────────────┼───────────┤
+│ 2026-03-02 │ Lunes     │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-03 │ Martes    │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-04 │ Miércoles │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-05 │ Jueves    │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-06 │ Viernes   │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-07 │ Sábado    │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+│ 2026-03-08 │ Domingo   │ Descanso                      │ Día Libre (OFF) │ DESCANSO  │
+│ 2026-03-09 │ Lunes     │ Descanso                      │ Día Libre (OFF) │ DESCANSO  │
+│ 2026-03-10 │ Martes    │ Matutino 08:00 - 16:00        │ 08:00 - 16:00   │ LABORABLE │
+└────────────┴───────────┴───────────────────────────────┴─────────────────┴───────────┘
+  • 12 días laborables | 2 días de descanso.
+
+✔ Horario y descansos establecidos exitosamente con ID 1.
+  • Colaborador: Carlos Gómez (E101)
+  • Modo: ROTATING
+  • Patrón generado: Rol Carlos Gómez (Descanso Rolado 7 sem) (#1)
+  • Vigencia desde: 2026-03-02
+```
+
+#### 2. `asistpy schedule assign` (Crear Asignación con Días de Descanso)
+Permite asignar turno fijo o rotativo, especificando descansos con `--rest-days` (o días laborables con `--working-days`):
+
+```bash
+# Asignar turno fijo descansando los domingos (por defecto lunes a sábado laborables):
 asistpy schedule assign \
   --employee-pin "E101" \
   --shift-id 1 \
   --mode fixed \
+  --rest-days domingo \
   --valid-from 2026-09-01
 
-# Asignar turno con fecha de término definida
+# Asignar turno fijo descansando sábado y domingo:
 asistpy schedule assign \
   --employee-pin "E101" \
-  --shift-id 2 \
+  --shift-id 1 \
   --mode fixed \
-  --valid-from 2026-09-01 \
-  --valid-until 2026-12-31
+  --rest-days "sab,dom" \
+  --valid-from 2026-09-01
+
+# Asignar esquema rotativo cíclico vinculado a un patrón de rotación:
+asistpy schedule assign \
+  --employee-pin "E102" \
+  --mode rotating \
+  --rotation-pattern-id 1 \
+  --valid-from 2026-09-01
 ```
+
+> [!TIP]
+> El parámetro `--rest-days` acepta días en español o inglés, abreviados o completos separados por coma (ej. `domingo`, `dom`, `sunday`, `sab,dom`, `sat,sun`). De igual manera, `--working-days` permite indicar explícitamente los días de trabajo (ej. `0,1,2,3,4,5` o `lun-sab`).
 
 **Salida de ejemplo:**
 ```text
 ✔ Horario asignado exitosamente con ID 1.
-┌────┬──────────────┬──────────────┬───────────────┬───────┬──────────────┬──────────────┐
-│ ID │ PIN Empleado │ Empleado     │ Turno         │ Modo  │ Válido Desde │ Válido Hasta │
-├────┼──────────────┼──────────────┼───────────────┼───────┼──────────────┼──────────────┤
-│  1 │ E101         │ Carlos Gómez │ Matutino 8-16 │ fixed │  2026-09-01  │  Indefinido  │
-└────┴──────────────┴──────────────┴───────────────┴───────┴──────────────┴──────────────┘
+┌────┬──────────────┬──────────────┬───────────────┬───────┬──────────────────────────┬──────────────┬──────────────┐
+│ ID │ PIN Empleado │ Empleado     │ Turno / Patrón│ Modo  │ Días Laborables / Desc.  │ Válido Desde │ Válido Hasta │
+├────┼──────────────┼──────────────┼───────────────┼───────┼──────────────────────────┼──────────────┼──────────────┤
+│  1 │ E101         │ Carlos Gómez │ Matutino 8-16 │ fixed │ Lun-Sáb (Descanso: Dom)  │  2026-09-01  │  Indefinido  │
+└────┴──────────────┴──────────────┴───────────────┴───────┴──────────────────────────┴──────────────┴──────────────┘
 ```
 
-### 2. `asistpy schedule show` (Ver Detalle)
+#### 2. `asistpy schedule show` (Ver Detalle)
 ```bash
 asistpy schedule show --assignment-id 1
 ```
 
-### 3. `asistpy schedule list` (Listar)
+#### 3. `asistpy schedule list` (Listar)
 ```bash
 # Listar todas las asignaciones
 asistpy schedule list
@@ -623,31 +704,103 @@ asistpy schedule list
 asistpy schedule list --employee-pin "E101"
 ```
 
-**Salida de ejemplo:**
-```text
-┌────┬──────────────┬───────┬──────────┬──────────────┬──────────────┐
-│ ID │ PIN Empleado │ Modo  │ Turno ID │ Válido Desde │ Válido Hasta │
-├────┼──────────────┼───────┼──────────┼──────────────┼──────────────┤
-│  1 │ E101         │ fixed │        1 │  2026-09-01  │  Indefinido  │
-└────┴──────────────┴───────┴──────────┴──────────────┴──────────────┘
-
-Total asignaciones: 1
-```
-
-### 4. `asistpy schedule edit` (Modificar)
+#### 4. `asistpy schedule edit` (Modificar Turno o Días de Descanso)
+Permite modificar el turno, las fechas o cambiar el día de descanso asignado:
 ```bash
+# Cambiar el descanso semanal a los lunes:
+asistpy schedule edit --assignment-id 1 --rest-days lunes
+
+# Cambiar de turno y definir vigencia:
 asistpy schedule edit --assignment-id 1 --shift-id 2 --valid-until 2026-11-30
 ```
 
-### 5. `asistpy schedule close` (Cerrar Vigencia)
-Establece una fecha de fin para el horario actual (por ejemplo, ante un cambio de turno):
+#### 5. `asistpy schedule close` (Cerrar Vigencia)
+Establece una fecha de fin para el horario actual (por ejemplo, ante un cambio de rol o de puesto):
 ```bash
 asistpy schedule close --assignment-id 1 --valid-until 2026-09-15
 ```
 
-### 6. `asistpy schedule delete` (Eliminar)
+#### 6. `asistpy schedule delete` (Eliminar)
 ```bash
 asistpy schedule delete --assignment-id 1 --force
+```
+
+---
+
+### B. Patrones de Rotación Cíclicos (`asistpy schedule rotation`)
+
+Permite definir esquemas donde los descansos rotan cíclicamente en secuencias periódicas (diaria, semanal, catorcenal, mensual). En la secuencia de turnos, el valor `OFF`, `REST` o `0` representa un **día de descanso**.
+
+#### 1. `asistpy schedule rotation add` (Crear Patrón)
+```bash
+# Patrón 6x1 (6 días en Turno 1 y 1 día de descanso) con rotación semanal:
+asistpy schedule rotation add \
+  --name "Rotativo 6x1 Matutino" \
+  --sequence "1,1,1,1,1,1,OFF" \
+  --frequency weekly \
+  --anchor-date 2026-03-01
+
+# Patrón 4x3 (4 días laborables y 3 descansos continuos):
+asistpy schedule rotation add \
+  --name "Operativo 4x3" \
+  --sequence "1,1,1,1,OFF,OFF,OFF" \
+  --frequency weekly \
+  --anchor-date 2026-03-01
+```
+
+#### 2. `asistpy schedule rotation list` (Listar Patrones)
+```bash
+asistpy schedule rotation list
+```
+
+#### 3. `asistpy schedule rotation show` (Ver Patrón)
+```bash
+asistpy schedule rotation show --pattern-id 1
+```
+
+#### 4. `asistpy schedule rotation delete` (Eliminar Patrón)
+```bash
+asistpy schedule rotation delete --pattern-id 1 --force
+```
+
+---
+
+### C. Eventualidades y Excepciones de Calendario (`asistpy schedule exception`)
+
+Permite registrar eventualidades específicas por fecha para un colaborador. Tienen máxima prioridad en el motor de resolución de horarios:
+
+1. **Forzar día de descanso**: Útil cuando a un empleado se le otorga un día libre o descanso compensatorio en un día que normalmente le correspondía laborar.
+2. **Sustituir turno extraordinario**: Útil cuando un colaborador debe cubrir una guardia o turno distinto en una fecha puntual.
+
+#### 1. `asistpy schedule exception add` (Registrar Eventualidad)
+```bash
+# Forzar día de descanso (no generará falta en la evaluación diaria):
+asistpy schedule exception add \
+  --employee-id 1 \
+  --date 2026-03-18 \
+  --rest-day \
+  --reason "Descanso compensatorio por guardia en fin de semana"
+
+# Asignar turno extraordinario en una fecha determinada:
+asistpy schedule exception add \
+  --employee-id 1 \
+  --date 2026-03-22 \
+  --override-shift-id 2 \
+  --reason "Cobertura especial en turno nocturno"
+```
+
+#### 2. `asistpy schedule exception list` (Listar Eventualidades)
+```bash
+# Listar todas las excepciones activas de un empleado:
+asistpy schedule exception list --employee-id 1
+
+# Filtrar por rango de fechas:
+asistpy schedule exception list --employee-id 1 --start-date 2026-03-01 --end-date 2026-03-31
+```
+
+#### 3. `asistpy schedule exception delete` (Cancelar / Revertir Eventualidad)
+```bash
+asistpy schedule exception delete --exception-id 1 --force
 ```
 
 ---

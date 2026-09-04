@@ -15,6 +15,9 @@ from .in_memory_rotation_pattern_repo import (
 from .in_memory_schedule_assignment_repo import (
     InMemoryScheduleAssignmentRepository,
 )
+from .in_memory_schedule_exception_repo import (
+    InMemoryScheduleExceptionRepository,
+)
 from .in_memory_shift_repo import InMemoryShiftRepository
 from .in_memory_sync_state_repo import InMemorySyncStateRepository
 
@@ -30,6 +33,7 @@ __all__ = [
     "InMemoryPositionRepository",
     "InMemoryRotationPatternRepository",
     "InMemoryScheduleAssignmentRepository",
+    "InMemoryScheduleExceptionRepository",
     "InMemoryShiftRepository",
     "InMemorySyncStateRepository",
 ]

@@ -97,9 +97,19 @@ Al pulsar **Completar y Arrancar**, la configuración se guardará y la ventana 
 - Pestaña **Departamentos**: Creación y organización por áreas.
 - Pestaña **Sucursales**: Administración de ubicaciones y zonas horarias.
 
-### 4. Turnos y Horarios
-- Catálogo de turnos fijos, partidas y jornadas nocturnas (que cruzan la medianoche) con definición de tolerancias de retardo.
-- Asignador de turnos por colaborador con vigencia de fechas.
+### 4. Turnos, Horarios y Rotaciones
+El módulo se divide en 4 pestañas especializadas para cubrir la totalidad de esquemas laborales:
+- **Catálogo de Turnos**: Creación y edición de turnos fijos, turnos con descanso intermedio y jornadas nocturnas (que cruzan la medianoche), con definición precisa de tolerancias de entrada, retardo y salida anticipada.
+- **Asignaciones de Horario**:
+  - Vinculación de turnos a cada colaborador con rango de fechas de vigencia.
+  - **Días de Descanso Fijo**: Configuración visual mediante selector de esquemas frecuentes (*Lunes a Sábado*, *Lunes a Viernes*, *Personalizado*) y casillas independientes para los 7 días de la semana (Lunes a Domingo), guardando automáticamente los días laborables (`working_weekdays`).
+  - **Soporte de Esquemas Rotativos**: Selección directa de patrones cíclicos previamente configurados.
+- **Patrones de Rotación**:
+  - Catálogo de secuencias cíclicas de trabajo y descanso periódico (ej. 6x1, 4x3, esquemas 24x48).
+  - Diálogo interactivo donde se introducen los identificadores de turnos y las palabras clave `OFF`, `DESC` o `REST` para definir los días de descanso dentro del ciclo, con frecuencia (semanal, catorcenal, etc.) y fecha ancla.
+- **Excepciones y Eventualidades**:
+  - Gestión de incidencias programadas y cambios de calendario puntuales que sobreescriben el horario habitual.
+  - Diálogo intuitivo con selector de colaborador, fecha en calendario y opción para **Forzar día de descanso** (por permiso, guardia previa, etc.) o **Sustituir por turno extraordinario**, registrando el motivo de la eventualidad.
 
 ### 5. Marcaciones y Asistencia
 - **Marcaciones Crudas**: Visor de eventos extraídos directamente del hardware (UID, fecha, hora, método de verificación: huella/rostro/tarjeta).
@@ -107,8 +117,9 @@ Al pulsar **Completar y Arrancar**, la configuración se guardará y la ventana 
 - Botón **📥 Exportar a CSV** para extraer reportes a hojas de cálculo.
 
 ### 6. Cierre y Evaluación
-- Procesamiento de asistencias por fecha con un clic (**⚡ Ejecutar Evaluación**).
-- Detección automática de retardos, salidas tempranas, omisiones y faltas.
+- Procesamiento de asistencias por fecha o rango con un clic (**⚡ Ejecutar Evaluación**).
+- **Resolución Inteligente de Descansos**: En días de descanso (semanal fijo, rotativo o forzado por excepción), el sistema no genera faltas injustificadas sino el estado formal `REST_DAY`. Si el colaborador asiste y checa en su descanso, se registra como `PRESENT` indicando la nota *"Laboró en día de descanso"*.
+- Detección automática de retardos, salidas tempranas, omisiones y faltas (`ABSENT`).
 - Modal para **📝 Justificar Incidencias** con motivo, folio de justificante y registro formal en el sistema.
 
 ### 7. Configuración y Diagnóstico

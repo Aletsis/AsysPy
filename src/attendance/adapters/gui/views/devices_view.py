@@ -36,7 +36,7 @@ class DeviceEditDialog(QDialog):
         self.state = app_state
         self.device = device
         self.setWindowTitle("Editar Reloj Biométrico" if device else "Registrar Nuevo Reloj")
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(500)
         self.setStyleSheet(Theme.get_stylesheet())
 
         self._setup_ui()
@@ -46,23 +46,30 @@ class DeviceEditDialog(QDialog):
         layout.setSpacing(14)
 
         form = QFormLayout()
-        self.txt_name = QLineEdit(self.device.name if self.device else "Reloj Entrada")
+        self.txt_name = QLineEdit(self.device.name if self.device else "Reloj Entrada Principal")
         self.txt_ip = QLineEdit(self.device.ip_address if self.device else "192.168.1.201")
         self.txt_port = QLineEdit(str(self.device.port or 4370) if self.device else "4370")
+        self.txt_serial = QLineEdit(self.device.serial_number if self.device else "")
+        self.txt_serial.setPlaceholderText("Opcional (se autodetecta al probar)")
+        self.txt_location = QLineEdit(self.device.location_label or "" if self.device else "")
+        self.txt_location.setPlaceholderText("Ej. Torniquetes Acceso A")
 
         self.combo_branch = QComboBox()
-        self.combo_branch.addItem("Sin sucursal asignada", None)
+        self.combo_branch.addItem("Sin sucursal asignada (General)", 0)
         branches = self.state.bundle.branch_repo.list_all() if self.state.bundle else []
         selected_idx = 0
         for i, b in enumerate(branches, start=1):
-            self.combo_branch.addItem(b.name, b.id)
-            if self.device and self.device.branch_id == b.id:
-                selected_idx = i
+            if b.id is not None:
+                self.combo_branch.addItem(b.name, b.id)
+                if self.device and self.device.branch_id == b.id:
+                    selected_idx = i
         self.combo_branch.setCurrentIndex(selected_idx)
 
-        form.addRow("Nombre descriptivo:", self.txt_name)
-        form.addRow("Dirección IP:", self.txt_ip)
+        form.addRow("Nombre descriptivo (*):", self.txt_name)
+        form.addRow("Dirección IP (*):", self.txt_ip)
         form.addRow("Puerto TCP (ZK):", self.txt_port)
+        form.addRow("Número de Serie:", self.txt_serial)
+        form.addRow("Ubicación Física:", self.txt_location)
         form.addRow("Sucursal asignada:", self.combo_branch)
         layout.addLayout(form)
 
@@ -104,9 +111,17 @@ class DeviceEditDialog(QDialog):
     def _probe_done(self, success: bool, msg: str, info: dict) -> None:
         self.btn_probe.setEnabled(True)
         if success:
-            fw = info.get("firmware", "")
-            fw_str = f" [FW: {fw}]" if fw else ""
-            self.lbl_probe_res.setText(f"✓ {msg}{fw_str}")
+            fw = info.get("firmware_version", info.get("firmware", ""))
+            serial = info.get("serial_number", "")
+            if serial and not self.txt_serial.text().strip():
+                self.txt_serial.setText(serial)
+            details = []
+            if fw:
+                details.append(f"FW: {fw}")
+            if serial:
+                details.append(f"Serie: {serial}")
+            extra = f" [{', '.join(details)}]" if details else ""
+            self.lbl_probe_res.setText(f"✓ {msg}{extra}")
             self.lbl_probe_res.setStyleSheet("color: #10B981; font-weight: bold;")
         else:
             self.lbl_probe_res.setText(f"✗ {msg}")
@@ -121,25 +136,29 @@ class DeviceEditDialog(QDialog):
 
         port = int(self.txt_port.text().strip() or "4370")
         branch_id = self.combo_branch.currentData() or 0
+        serial = self.txt_serial.text().strip()
+        location = self.txt_location.text().strip() or None
 
         bundle = self.state.bundle
         if not bundle:
             return
 
         if self.device:
-            # Edición
             self.device.name = name
             self.device.ip_address = ip
             self.device.port = port
             self.device.branch_id = branch_id
+            self.device.serial_number = serial
+            self.device.location_label = location
             bundle.device_repo.save(self.device)
         else:
-            # Nuevo
             new_dev = Device(
                 id=None,
                 name=name,
                 ip_address=ip,
                 port=port,
+                serial_number=serial,
+                location_label=location,
                 branch_id=branch_id,
                 active=True,
             )
@@ -154,6 +173,8 @@ class DevicesView(QWidget):
     def __init__(self, app_state: AppState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = app_state
+        self._active_probe = None
+        self._active_sync = None
         self._setup_ui()
         self.refresh_devices()
 
@@ -193,19 +214,22 @@ class DevicesView(QWidget):
         self.btn_edit.clicked.connect(self._edit_selected)
         self.btn_toggle_active = QPushButton("Activar / Desactivar")
         self.btn_toggle_active.clicked.connect(self._toggle_active)
+        self.btn_delete = QPushButton("🗑️ Eliminar")
+        self.btn_delete.clicked.connect(self._delete_device)
 
         actions_bar.addWidget(self.btn_sync_sel)
         actions_bar.addWidget(self.btn_probe_sel)
         actions_bar.addWidget(self.btn_edit)
         actions_bar.addWidget(self.btn_toggle_active)
+        actions_bar.addWidget(self.btn_delete)
         actions_bar.addStretch()
         layout.addLayout(actions_bar)
 
         # Tabla de dispositivos
         self.table = QTableWidget()
-        self.table.setColumnCount(6)
+        self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Nombre", "Dirección IP", "Puerto", "Sucursal", "Estado"
+            "ID", "Nombre", "Dirección IP", "Puerto", "Sucursal", "Ubicación", "Estado"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -223,20 +247,21 @@ class DevicesView(QWidget):
 
             self.table.setRowCount(len(devices))
             for row, dev in enumerate(devices):
-                self.table.setItem(row, 0, QTableWidgetItem(str(dev.id)))
+                self.table.setItem(row, 0, QTableWidgetItem(str(dev.id or "-")))
                 self.table.setItem(row, 1, QTableWidgetItem(dev.name))
                 self.table.setItem(row, 2, QTableWidgetItem(dev.ip_address or "-"))
                 self.table.setItem(row, 3, QTableWidgetItem(str(dev.port or 4370)))
 
                 branch_name = branches_map.get(dev.branch_id, "General") if dev.branch_id else "General"
                 self.table.setItem(row, 4, QTableWidgetItem(branch_name))
+                self.table.setItem(row, 5, QTableWidgetItem(dev.location_label or "-"))
 
                 status_item = QTableWidgetItem("ACTIVO" if dev.active else "INACTIVO")
                 if dev.active:
                     status_item.setForeground(Qt.GlobalColor.green)
                 else:
                     status_item.setForeground(Qt.GlobalColor.gray)
-                self.table.setItem(row, 5, status_item)
+                self.table.setItem(row, 6, status_item)
         except Exception:
             pass
 
@@ -280,6 +305,25 @@ class DevicesView(QWidget):
         msg = f"Reloj '{dev.name}' {'activado' if dev.active else 'desactivado'}."
         self.state.notify(msg, "info")
 
+    def _delete_device(self) -> None:
+        dev = self._get_selected_device()
+        if not dev or not dev.id or not self.state.bundle:
+            return
+        confirm = QMessageBox.question(
+            self,
+            "Confirmar Eliminación",
+            f"¿Está seguro de eliminar el reloj biométrico '{dev.name}' (ID: {dev.id})?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            success = self.state.bundle.device_repo.delete(dev.id)
+            if success:
+                self.refresh_devices()
+                self.state.data_updated.emit("devices")
+                self.state.notify(f"Reloj '{dev.name}' eliminado.", "success")
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo eliminar el reloj.")
+
     def _probe_selected(self) -> None:
         dev = self._get_selected_device()
         if not dev or not dev.ip_address:
@@ -290,7 +334,6 @@ class DevicesView(QWidget):
             lambda success, msg, info: self.state.notify(msg, "success" if success else "error")
         )
         worker.start()
-        # Guardar referencia para evitar recolección de basura
         self._active_probe = worker
 
     def _sync_selected(self) -> None:

@@ -272,6 +272,7 @@ class AttendanceWorker:
                 shift_repo=bundle.shift_repo,
                 rotation_pattern_repo=bundle.rotation_pattern_repo,
                 incidence_repo=bundle.incidence_repo,
+                schedule_exception_repo=bundle.schedule_exception_repo,
             )
             batch_processor = ProcessDailyAttendanceBatch(
                 employee_repo=bundle.employee_repo,

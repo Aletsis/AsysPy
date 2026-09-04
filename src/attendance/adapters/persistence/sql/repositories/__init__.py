@@ -17,6 +17,9 @@ from attendance.adapters.persistence.sql.repositories.rotation_pattern_repo impo
 from attendance.adapters.persistence.sql.repositories.schedule_assignment_repo import (
     SqlScheduleAssignmentRepository,
 )
+from attendance.adapters.persistence.sql.repositories.schedule_exception_repo import (
+    SqlScheduleExceptionRepository,
+)
 from attendance.adapters.persistence.sql.repositories.shift_repo import SqlShiftRepository
 from attendance.adapters.persistence.sql.repositories.sync_state_repo import SqlSyncStateRepository
 
@@ -32,6 +35,7 @@ __all__ = [
     "SqlPositionRepository",
     "SqlRotationPatternRepository",
     "SqlScheduleAssignmentRepository",
+    "SqlScheduleExceptionRepository",
     "SqlShiftRepository",
     "SqlSyncStateRepository",
 ]

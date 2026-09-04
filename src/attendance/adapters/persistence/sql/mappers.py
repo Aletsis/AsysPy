@@ -19,6 +19,7 @@ from attendance.adapters.persistence.sql.models import (
     PositionModel,
     RotationPatternModel,
     ScheduleAssignmentModel,
+    ScheduleExceptionModel,
     ShiftModel,
     WorkSessionModel,
 )
@@ -44,6 +45,7 @@ from attendance.domain.schedule.enums import (
     ShiftCategory,
     Weekday,
 )
+from attendance.domain.schedule.exception import ScheduleException
 from attendance.domain.schedule.rotation import RotationPattern
 from attendance.domain.schedule.shift import ShiftDefinition, ShiftSegment
 
@@ -503,6 +505,33 @@ def schedule_assignment_to_model(
         shift_definition_id=entity.shift_definition_id,
         rotation_pattern_id=entity.rotation_pattern_id,
         expected_min_sessions=entity.expected_min_sessions,
+    )
+
+
+# ============================================================================
+# ScheduleException Mappers
+# ============================================================================
+def schedule_exception_to_domain(model: ScheduleExceptionModel) -> ScheduleException:
+    """Convierte un ScheduleExceptionModel a ScheduleException del dominio."""
+    return ScheduleException(
+        id=model.id,
+        employee_pin=model.employee_pin,
+        date=model.date,
+        shift_definition_id=model.shift_definition_id,
+        reason=model.reason,
+    )
+
+
+def schedule_exception_to_model(
+    entity: ScheduleException,
+) -> ScheduleExceptionModel:
+    """Convierte ScheduleException a ScheduleExceptionModel."""
+    return ScheduleExceptionModel(
+        id=entity.id if entity.id is not None else None,
+        employee_pin=entity.employee_pin,
+        date=entity.date,
+        shift_definition_id=entity.shift_definition_id,
+        reason=entity.reason,
     )
 
 

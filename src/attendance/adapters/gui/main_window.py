@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         self.nav_buttons = [
             ("📊  Tablero Principal", 0),
             ("📡  Relojes Biométricos", 1),
-            ("👥  Personal y Áreas", 2),
+            ("👥  Personal y Organización", 2),
             ("📅  Turnos y Horarios", 3),
             ("📋  Marcaciones", 4),
             ("⚖️  Cierre y Evaluación", 5),

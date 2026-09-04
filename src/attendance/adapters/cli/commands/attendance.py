@@ -83,6 +83,7 @@ def cmd_attendance_evaluate(args: argparse.Namespace, ctx: CLIContext) -> int:
         shift_repo=bundle.shift_repo,
         rotation_pattern_repo=bundle.rotation_pattern_repo,
         incidence_repo=bundle.incidence_repo,
+        schedule_exception_repo=bundle.schedule_exception_repo,
     )
 
     results: list[DailyAttendance] = []

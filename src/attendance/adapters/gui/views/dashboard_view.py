@@ -36,10 +36,9 @@ class MetricCard(QFrame):
         self.lbl_value.setStyleSheet(f"font-size: 26px; font-weight: 700; color: {Theme.TEXT_MAIN};")
         layout.addWidget(self.lbl_value)
 
-        if subtitle:
-            self.lbl_sub = QLabel(subtitle)
-            self.lbl_sub.setObjectName("mutedLabel")
-            layout.addWidget(self.lbl_sub)
+        self.lbl_sub = QLabel(subtitle)
+        self.lbl_sub.setObjectName("mutedLabel")
+        layout.addWidget(self.lbl_sub)
 
     def set_value(self, value: str) -> None:
         self.lbl_value.setText(value)
@@ -96,19 +95,23 @@ class DashboardView(QWidget):
         prog_layout.addWidget(self.prog_bar)
         main_layout.addWidget(self.progress_container)
 
-        # Grid de Tarjetas de Métricas
+        # Grid de Tarjetas de Métricas (2 filas x 3 columnas)
         grid = QGridLayout()
         grid.setSpacing(16)
 
         self.card_devices = MetricCard("Relojes Biométricos", "0", "0 Activos")
         self.card_employees = MetricCard("Colaboradores Registrados", "0", "En plantilla")
         self.card_attendance = MetricCard("Marcaciones Hoy", "0", "Eventos sincronizados")
-        self.card_branches = MetricCard("Sucursales", "0", "Ubicaciones activas")
+        self.card_branches = MetricCard("Sucursales", "0", "Ubicaciones operativas")
+        self.card_departments = MetricCard("Departamentos", "0", "Áreas activas")
+        self.card_positions = MetricCard("Puestos / Cargos", "0", "Catálogo laboral")
 
         grid.addWidget(self.card_devices, 0, 0)
         grid.addWidget(self.card_employees, 0, 1)
         grid.addWidget(self.card_attendance, 0, 2)
-        grid.addWidget(self.card_branches, 0, 3)
+        grid.addWidget(self.card_branches, 1, 0)
+        grid.addWidget(self.card_departments, 1, 1)
+        grid.addWidget(self.card_positions, 1, 2)
         main_layout.addLayout(grid)
 
         # Panel de Estado Rápido y Consejos
@@ -144,10 +147,18 @@ class DashboardView(QWidget):
             self.card_devices.lbl_sub.setText(f"{active_devices} Activos")
 
             employees = bundle.employee_repo.list_all()
+            active_employees = sum(1 for e in employees if e.active)
             self.card_employees.set_value(str(len(employees)))
+            self.card_employees.lbl_sub.setText(f"{active_employees} Activos en plantilla")
 
             branches = bundle.branch_repo.list_all()
             self.card_branches.set_value(str(len(branches)))
+
+            depts = bundle.department_repo.list_all()
+            self.card_departments.set_value(str(len(depts)))
+
+            positions = bundle.position_repo.list_all() if bundle.position_repo else []
+            self.card_positions.set_value(str(len(positions)))
 
             # Contar marcaciones de hoy
             today = date.today()
@@ -158,7 +169,6 @@ class DashboardView(QWidget):
             self.lbl_backend_info.setText(f"Motor de Persistencia Activo: {self.state.config.backend.upper()}")
             self.lbl_db_info.setText(f"Cadena de Conexión: {self.state.config.database_url}")
         except Exception:
-            # La base de datos puede estar recién creada
             pass
 
     def _sync_all_devices(self) -> None:

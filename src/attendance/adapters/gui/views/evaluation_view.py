@@ -56,6 +56,7 @@ class EvaluationWorker(QThread):
                 shift_repo=self.bundle.shift_repo,
                 rotation_pattern_repo=self.bundle.rotation_pattern_repo,
                 incidence_repo=self.bundle.incidence_repo,
+                schedule_exception_repo=self.bundle.schedule_exception_repo,
             )
 
             total = len(self.employee_pins)

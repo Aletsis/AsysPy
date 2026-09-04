@@ -29,6 +29,7 @@ from attendance.ports.organization import EmployeeRepository
 from attendance.ports.schedule import (
     EmployeeScheduleAssignmentRepository,
     RotationPatternRepository,
+    ScheduleExceptionRepository,
     ShiftRepository,
 )
 
@@ -49,12 +50,14 @@ class ProcessDailyAttendance:
         dedup_window_minutes: int = 2,
         shift_repo: ShiftRepository | None = None,
         rotation_pattern_repo: RotationPatternRepository | None = None,
+        schedule_exception_repo: ScheduleExceptionRepository | None = None,
     ) -> None:
         self.attendance_repo = attendance_repo
         self.daily_attendance_repo = daily_attendance_repo
         self.schedule_assignment_repo = schedule_assignment_repo
         self.shift_repo = shift_repo
         self.rotation_pattern_repo = rotation_pattern_repo
+        self.schedule_exception_repo = schedule_exception_repo
 
         if shift_definitions is not None:
             self.shift_definitions = dict(shift_definitions)
@@ -123,8 +126,19 @@ class ProcessDailyAttendance:
                                     shift_dict[s.id] = s
                                     self.shift_definitions[s.id] = s
 
+        exceptions = list(self.schedule_exceptions)
+        if self.schedule_exception_repo is not None:
+            repo_exceptions = self.schedule_exception_repo.list_for_employee(
+                employee_pin, start_date=target_date, end_date=target_date
+            )
+            known_dates = {(e.employee_pin, e.date) for e in exceptions}
+            for rexc in repo_exceptions:
+                if (rexc.employee_pin, rexc.date) not in known_dates:
+                    exceptions.append(rexc)
+                    known_dates.add((rexc.employee_pin, rexc.date))
+
         if self.shift_repo is not None:
-            for exc in self.schedule_exceptions:
+            for exc in exceptions:
                 if exc.shift_definition_id is not None and exc.shift_definition_id not in shift_dict:
                     s = self.shift_repo.get_by_id(exc.shift_definition_id)
                     if s is not None and s.id is not None:
@@ -134,7 +148,7 @@ class ProcessDailyAttendance:
         resolution = ScheduleResolver.resolve(
             employee_pin=employee_pin,
             target_date=target_date,
-            exceptions=self.schedule_exceptions,
+            exceptions=exceptions,
             active_assignment=active_assignment,
             shift_definitions=shift_dict,
             rotation_patterns=rot_dict,
@@ -225,6 +239,7 @@ class ProcessEmployeeAttendanceRange:
         dedup_window_minutes: int = 2,
         shift_repo: ShiftRepository | None = None,
         rotation_pattern_repo: RotationPatternRepository | None = None,
+        schedule_exception_repo: ScheduleExceptionRepository | None = None,
     ) -> None:
         if daily_processor is not None:
             self.daily_processor = daily_processor
@@ -251,6 +266,7 @@ class ProcessEmployeeAttendanceRange:
                 dedup_window_minutes=dedup_window_minutes,
                 shift_repo=shift_repo,
                 rotation_pattern_repo=rotation_pattern_repo,
+                schedule_exception_repo=schedule_exception_repo,
             )
 
     def execute(
@@ -317,6 +333,7 @@ class ProcessDailyAttendanceBatch:
         dedup_window_minutes: int = 2,
         shift_repo: ShiftRepository | None = None,
         rotation_pattern_repo: RotationPatternRepository | None = None,
+        schedule_exception_repo: ScheduleExceptionRepository | None = None,
     ) -> None:
         self.employee_repo = employee_repo
         if daily_processor is not None:
@@ -344,6 +361,7 @@ class ProcessDailyAttendanceBatch:
                 dedup_window_minutes=dedup_window_minutes,
                 shift_repo=shift_repo,
                 rotation_pattern_repo=rotation_pattern_repo,
+                schedule_exception_repo=schedule_exception_repo,
             )
 
     def execute(
@@ -401,6 +419,7 @@ def process_daily_attendance(
     mark_logs_processed: bool = True,
     shift_repo: ShiftRepository | None = None,
     rotation_pattern_repo: RotationPatternRepository | None = None,
+    schedule_exception_repo: ScheduleExceptionRepository | None = None,
 ) -> DailyAttendance:
     """Función de conveniencia para procesar la jornada diaria de un empleado."""
     processor = ProcessDailyAttendance(
@@ -415,6 +434,7 @@ def process_daily_attendance(
         dedup_window_minutes=dedup_window_minutes,
         shift_repo=shift_repo,
         rotation_pattern_repo=rotation_pattern_repo,
+        schedule_exception_repo=schedule_exception_repo,
     )
     return processor.execute(
         employee_pin=employee_pin,
@@ -441,6 +461,7 @@ def process_employee_attendance_range(
     mark_logs_processed: bool = True,
     shift_repo: ShiftRepository | None = None,
     rotation_pattern_repo: RotationPatternRepository | None = None,
+    schedule_exception_repo: ScheduleExceptionRepository | None = None,
 ) -> list[DailyAttendance]:
     """Función de conveniencia para procesar la asistencia de un empleado en un rango de fechas."""
     range_processor = ProcessEmployeeAttendanceRange(
@@ -455,6 +476,7 @@ def process_employee_attendance_range(
         dedup_window_minutes=dedup_window_minutes,
         shift_repo=shift_repo,
         rotation_pattern_repo=rotation_pattern_repo,
+        schedule_exception_repo=schedule_exception_repo,
     )
     return range_processor.execute(
         employee_pin=employee_pin,
@@ -482,6 +504,7 @@ def process_daily_attendance_batch(
     mark_logs_processed: bool = True,
     shift_repo: ShiftRepository | None = None,
     rotation_pattern_repo: RotationPatternRepository | None = None,
+    schedule_exception_repo: ScheduleExceptionRepository | None = None,
 ) -> list[DailyAttendance]:
     """Función de conveniencia para procesar en lote la jornada de empleados activos."""
     batch_processor = ProcessDailyAttendanceBatch(
@@ -497,6 +520,7 @@ def process_daily_attendance_batch(
         dedup_window_minutes=dedup_window_minutes,
         shift_repo=shift_repo,
         rotation_pattern_repo=rotation_pattern_repo,
+        schedule_exception_repo=schedule_exception_repo,
     )
     return batch_processor.execute(
         target_date=target_date,

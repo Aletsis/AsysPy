@@ -194,6 +194,18 @@ class ScheduleAssignmentModel(Base):
     expected_min_sessions: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
+class ScheduleExceptionModel(Base):
+    """Tabla de excepciones y eventualidades de horario para empleados."""
+
+    __tablename__ = "schedule_exceptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    employee_pin: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    shift_definition_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
 class SyncStateModel(Base):
     """Tabla de control de marcas de agua para sincronización de dispositivos biométricos."""
 

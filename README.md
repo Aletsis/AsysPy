@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Architecture: Hexagonal](https://img.shields.io/badge/architecture-Hexagonal%20%2F%20DDD-green.svg)](#arquitectura-del-sistema)
 [![Plataformas](https://img.shields.io/badge/plataformas-Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Android%20(Termux)%20%7C%20Docker-informational.svg)](#-visión-multiplataforma-y-despliegue-modular)
-[![Tests](https://img.shields.io/badge/tests-148%20passed-brightgreen.svg)](#-pruebas-y-calidad)
+[![Tests](https://img.shields.io/badge/tests-336%20passed-brightgreen.svg)](#-pruebas-y-calidad)
 [![Linter](https://img.shields.io/badge/linter-ruff-black.svg)](#-pruebas-y-calidad)
 [![Type Checker](https://img.shields.io/badge/type%20checker-mypy-blue.svg)](#-pruebas-y-calidad)
 
@@ -38,6 +38,8 @@
 
 El núcleo del sistema resuelve la complejidad integral de los esquemas laborales modernos:
 - Turnos fijos, rotativos y jornadas nocturnas (que cruzan la medianoche).
+- Asignación flexible de días de descanso (días semanales fijos o descansos rotativos mediante secuencias cíclicas).
+- Manejo de eventualidades y excepciones de calendario (forzar descansos compensatorios o turnos extraordinarios en fechas específicas).
 - Ventanas de tolerancia y gracia para entradas y salidas.
 - Cálculo riguroso de minutos laborados, retardos, salidas anticipadas y horas extras sujetas a políticas organizacionales.
 - Detección y clasificación automática de incidencias (faltas, omisión de entrada/salida).
@@ -138,17 +140,17 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 
 1. **Dominio Puro (`src/attendance/domain`)**:
    - Totalmente independiente de bases de datos, frameworks gráficos, librerías web o protocolos de hardware.
-   - Contiene la esencia de las reglas de negocio: `Device`, `DeviceCapabilities`, `DailyAttendance`, `AttendancePairer`, `AttendanceEvaluator`, `Shift`, `Rotation`, `Incidence`, `AuditLog`.
+   - Contiene la esencia de las reglas de negocio: `Device`, `DeviceCapabilities`, `DailyAttendance`, `AttendancePairer`, `AttendanceEvaluator`, `Shift`, `Rotation`, `ScheduleException`, `Incidence`, `AuditLog`.
 2. **Puertos (`src/attendance/ports`)**:
-   - Interfaces abstractas (Protocolos) que definen contratos para persistencia (`DeviceRepository`, `DeviceRegistry`, `AttendanceRepository`, `DailyAttendanceRepository`, `EmployeeRepository`, `SyncStateRepository`, etc.) y lectores de hardware (`DeviceReader`).
+   - Interfaces abstractas (Protocolos) que definen contratos para persistencia (`DeviceRepository`, `DeviceRegistry`, `AttendanceRepository`, `DailyAttendanceRepository`, `EmployeeRepository`, `SyncStateRepository`, `ScheduleExceptionRepository`, etc.) y lectores de hardware (`DeviceReader`).
 3. **Casos de Uso (`src/attendance/application`)**:
-   - Orquesta la lógica del negocio: sincronización incremental de marcaciones (`sync_device_logs`), orquestación de sincronización masiva de relojes activos (`SyncAllActiveDevices`), emparejamiento entrada/salida, evaluación de jornada diaria, ajuste manual con auditoría y justificación de incidencias.
+   - Orquesta la lógica del negocio: sincronización incremental de marcaciones (`sync_device_logs`), orquestación de sincronización masiva de relojes activos (`SyncAllActiveDevices`), emparejamiento entrada/salida, evaluación de jornada diaria con días de descanso y excepciones, ajuste manual con auditoría y justificación de incidencias.
 4. **Adaptadores (`src/attendance/adapters`)**:
    - **Hardware**: Adaptador `ZkTcpReader` mediante `pyzk` (TCP 4370) con bloqueo de seguridad del reloj durante la lectura.
-   - **Persistencia en Memoria**: Repositorios en memoria (`InMemoryDeviceRepository`, `InMemoryAttendanceRepository`, etc.) para pruebas ultrarrápidas y desarrollo local aislado.
-   - **Persistencia Relacional SQL**: Repositorios SQLAlchemy 2.0 (`SqlDeviceRepository`, `SqlAttendanceRepository`, etc.) para SQLite, PostgreSQL, MySQL y SQL Server.
+   - **Persistencia en Memoria**: Repositorios en memoria (`InMemoryDeviceRepository`, `InMemoryAttendanceRepository`, `InMemoryScheduleExceptionRepository`, etc.) para pruebas ultrarrápidas y desarrollo local aislado.
+   - **Persistencia Relacional SQL**: Repositorios SQLAlchemy 2.0 (`SqlDeviceRepository`, `SqlAttendanceRepository`, `SqlScheduleExceptionRepository`, etc.) para SQLite, PostgreSQL, MySQL y SQL Server.
    - **Persistencia NoSQL**: Cliente base para MongoDB.
-   - **Fábrica Políglota (`PersistenceFactory`)**: Instanciación dinámica del conjunto de repositorios y catálogo (`PersistenceBundle.device_repo`) según configuración (`DATABASE_URL` o `PERSISTENCE_BACKEND`).
+   - **Fábrica Políglota (`PersistenceFactory`)**: Instanciación dinámica del conjunto de repositorios y catálogo (`PersistenceBundle.schedule_exception_repo`) según configuración (`DATABASE_URL` o `PERSISTENCE_BACKEND`).
 
 ---
 
@@ -161,14 +163,15 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 - Sincronización incremental: seguimiento de `last_record_uid` y `last_sync_time` para evitar duplicidad y procesar solo nuevos eventos.
 - Detección de reinicio o vaciado de memoria en el dispositivo para resincronización limpia.
 
-
 ### 2. Motor de Emparejamiento (Punch Pairing)
 - Asociación inteligente de marcaciones de entrada (*Check-In*) y salida (*Check-Out*).
 - Tolerancia contra dobles marcaciones por error o rebote del sensor en ventanas breves configurables.
 - Clasificación y aislamiento de marcaciones huérfanas (falta de salida o entrada no registrada).
 
-### 3. Evaluación Diaria y Horarios Flexibles
+### 3. Evaluación Diaria, Horarios Flexibles, Descansos y Eventualidades
 - Soporte para **turnos fijos**, **turnos rotativos** y **jornadas que cruzan la medianoche**.
+- **Días de Descanso Fijos y Rotativos**: Asignación de días fijos de la semana o patrones cíclicos (ej. 6x1, 4x3) con resolución automática: el día de descanso no genera falta injustificada (`REST_DAY`), y si el colaborador labora se clasifica como `PRESENT` con nota informativa.
+- **Eventualidades y Excepciones de Horario (`ScheduleException`)**: Precedencia superior para forzar descansos compensatorios o sobreescribir turnos extraordinarios en fechas específicas con registro de motivo.
 - Ventanas de tolerancia para inicio y fin de jornada (gracia por retardo).
 - Cálculo exacto de minutos trabajados, minutos de retardo, salida anticipada y horas extras sujetas a políticas de la empresa.
 
@@ -198,11 +201,11 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Hex
 | **Adaptadores SQL (SQLAlchemy)** | ✅ Completo | Modelos, mappers y repositorios relacionales para SQLite, Postgres, MySQL y SQL Server. |
 | **Adaptador Base MongoDB** | 🔄 Fase 1 | Cliente de conexión base (`MongoClientWrapper`). Repositorios NoSQL programados. |
 | **Dockerización de Producción** | ✅ Completo | `Dockerfile` multi-stage optimizado y servicio `asistpy-worker` en `docker-compose.yml`. |
-| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con CRUD completo (branch, department, employee, shift, schedule, device), asistencia, reportes, DB y worker. |
-| **Pruebas Automatizadas** | ✅ 148/148 | 148 pruebas unitarias e integrales pasando con 100% de éxito. |
+| **Herramienta CLI** | ✅ Completo | CLI unificada (`asistpy`) con CRUD completo (branch, department, employee, shift, schedule, rotation, exception, device), asistencia, reportes, DB y worker. |
+| **Capa Desktop GUI** | ✅ Completo | Aplicación de escritorio nativa (PySide6) con setup wizard, tablero de relojes, directorio, turnos/rotaciones/excepciones, marcaciones y evaluación. |
+| **Pruebas Automatizadas** | ✅ 336/336 | 336 pruebas unitarias e integrales pasando con 100% de éxito. |
 | **Análisis Estático y Tipado** | ✅ 0 errores | `ruff` (linter) y `mypy` (type-checker en 130 archivos fuente) limpios. |
 | **Capa Web / API REST** | ⏳ Planificado | En diseño de endpoints bajo FastAPI. |
-| **Capa Desktop GUI** | ⏳ Planificado | Planeada con PySide6 / Flet con SQLite local. |
 | **Capa Mobile (Android/iOS)** | ⏳ Planificado | Planeada para modo quiosco y supervisores de campo (Termux ya soportado vía CLI/Worker). |
 
 ---
@@ -420,7 +423,7 @@ El proyecto mantiene un estándar riguroso de calidad de código y cobertura:
 ```bash
 poetry run pytest -v
 ```
-Resultado esperado: **148 tests pasando**.
+Resultado esperado: **336 tests pasando**.
 
 ### Análisis de Estilo y Linting (Ruff)
 ```bash
@@ -437,7 +440,7 @@ Resultado esperado: **Success: no issues found in 130 source files**.
 
 ## 🗺 Pendientes y Roadmap
 
-El núcleo del dominio, los casos de uso, la capa relacional, el demonio worker 24/7 y la CLI unificada están completamente operativos. Las siguientes fases comprenden:
+El núcleo del dominio, los casos de uso, la capa relacional, el demonio worker 24/7, la CLI unificada y la GUI de escritorio están completamente operativos. Las siguientes fases comprenden:
 
 ### Fase 1: Capa de Servicio Web & API Centralizada
 - [ ] **API REST / FastAPI**: Endpoints para consulta de asistencias, reportes, justificación de incidencias y administración de turnos.
@@ -450,7 +453,7 @@ El núcleo del dominio, los casos de uso, la capa relacional, el demonio worker 
   - `asistpy department [add | show | list | edit | delete]`: Catálogo de departamentos y áreas funcionales.
   - `asistpy employee [add | show | list | edit | delete]`: Catálogo de empleados y colaboradores.
   - `asistpy shift [add | show | list | edit | delete]`: Catálogo de turnos, tolerancias y jornadas nocturnas.
-  - `asistpy schedule [assign | show | list | edit | close | delete]`: Asignaciones de horarios.
+  - `asistpy schedule [assign | show | list | edit | close | delete | rotation | exception]`: Asignaciones de horarios con descansos fijos, patrones rotativos y eventualidades/excepciones.
   - `asistpy device [add | show | list | edit | delete | probe | sync]`: Catálogo y sincronización de relojes biométricos.
   - `asistpy attendance [evaluate | list | adjust]`: Evaluación diaria y ajustes manuales con auditoría.
   - `asistpy report summary`: Generación y exportación de reportes a consola, CSV o JSON.
@@ -458,8 +461,8 @@ El núcleo del dominio, los casos de uso, la capa relacional, el demonio worker 
 - [x] **Extra de Dependencias `[cli]`**: Empaquetado ligero para terminal y manual de uso exhaustivo en `DOCS/CLI_MANUAL.md`.
 
 ### Fase 3: Aplicación de Escritorio Multiplataforma (Windows, macOS, Linux)
-- [ ] **Interfaz Gráfica de Escritorio**: Implementación de interfaz ligera (PySide6 / Flet) para casetas de control, estaciones de RRHH locales y administradores de sucursal.
-- [ ] **Empaquetado Autocontenido**: Distribución en ejecutables independientes (.exe para Windows, .dmg para macOS, AppImage/deb para Linux) con soporte para base de datos SQLite integrada.
+- [x] **Interfaz Gráfica de Escritorio**: Implementación de interfaz moderna en PySide6 (`asistpy-gui`) para casetas de control, estaciones de RRHH y administradores, con pestañas especializadas en turnos, asignaciones con selector de descansos, patrones rotativos y excepciones de calendario.
+- [x] **Empaquetado Autocontenido**: Distribución y scripts de empaquetado (`scripts/package/build_desktop.py`) para ejecutables independientes (.exe para Windows, .dmg para macOS, binario Linux) con soporte para base de datos SQLite integrada.
 
 ### Fase 4: Aplicación Móvil (Android & iOS)
 - [ ] **Cliente Móvil para Supervisores**: Aplicación táctil optimizada para teléfonos y tablets Android / iOS.

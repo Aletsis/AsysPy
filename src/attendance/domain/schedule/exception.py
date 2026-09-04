@@ -16,3 +16,4 @@ class ScheduleException:
     date: date
     shift_definition_id: int | None
     reason: str | None = None
+    id: int | None = None

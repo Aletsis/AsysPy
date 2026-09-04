@@ -23,6 +23,7 @@ from attendance.adapters.memory import (
     InMemoryPositionRepository,
     InMemoryRotationPatternRepository,
     InMemoryScheduleAssignmentRepository,
+    InMemoryScheduleExceptionRepository,
     InMemoryShiftRepository,
     InMemorySyncStateRepository,
 )
@@ -39,6 +40,7 @@ from attendance.adapters.persistence.sql.repositories import (
     SqlPositionRepository,
     SqlRotationPatternRepository,
     SqlScheduleAssignmentRepository,
+    SqlScheduleExceptionRepository,
     SqlShiftRepository,
     SqlSyncStateRepository,
 )
@@ -58,6 +60,7 @@ from attendance.ports.organization import (
 from attendance.ports.schedule import (
     EmployeeScheduleAssignmentRepository,
     RotationPatternRepository,
+    ScheduleExceptionRepository,
     ShiftRepository,
 )
 
@@ -78,6 +81,7 @@ class PersistenceBundle:
     device_repo: DeviceRepository
     shift_repo: ShiftRepository
     rotation_pattern_repo: RotationPatternRepository
+    schedule_exception_repo: ScheduleExceptionRepository | None = None
     position_repo: PositionRepository | None = None
     database: Database | None = None
 
@@ -130,6 +134,7 @@ class PersistenceFactory:
                 device_repo=InMemoryDeviceRepository(),
                 shift_repo=InMemoryShiftRepository(),
                 rotation_pattern_repo=InMemoryRotationPatternRepository(),
+                schedule_exception_repo=InMemoryScheduleExceptionRepository(),
                 position_repo=pos_repo,
                 database=None,
             )
@@ -179,6 +184,7 @@ class PersistenceFactory:
             device_repo=SqlDeviceRepository(session_factory),
             shift_repo=SqlShiftRepository(session_factory),
             rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
+            schedule_exception_repo=SqlScheduleExceptionRepository(session_factory),
             position_repo=SqlPositionRepository(session_factory),
             database=db,
         )
@@ -201,6 +207,7 @@ class PersistenceFactory:
             device_repo=SqlDeviceRepository(session_factory),
             shift_repo=SqlShiftRepository(session_factory),
             rotation_pattern_repo=SqlRotationPatternRepository(session_factory),
+            schedule_exception_repo=SqlScheduleExceptionRepository(session_factory),
             position_repo=SqlPositionRepository(session_factory),
             database=None,
         )
