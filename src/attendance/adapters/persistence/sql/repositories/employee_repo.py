@@ -1,13 +1,12 @@
-"""Adaptador SQLAlchemy para EmployeeRepository."""
-
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from attendance.adapters.persistence.sql.mappers import (
     employee_to_domain,
     employee_to_model,
+    fingerprint_to_model,
 )
-from attendance.adapters.persistence.sql.models import EmployeeModel
+from attendance.adapters.persistence.sql.models import EmployeeFingerprintModel, EmployeeModel
 from attendance.domain.organization.employee import Employee
 from attendance.ports.organization import EmployeeRepository
 
@@ -38,26 +37,48 @@ class SqlEmployeeRepository(EmployeeRepository):
                 existing.position = employee.position
                 existing.home_branch_id = employee.home_branch_id
                 existing.active = employee.active
-                session.commit()
-                employee.id = existing.id
-                return employee_to_domain(existing)
+                existing.email = employee.email
+                existing.phone_number = employee.phone_number
+                existing.curp = employee.curp
+                existing.rfc = employee.rfc
+                existing.password = employee.password
+                existing.card_number = employee.card_number
+                model = existing
             else:
                 model = employee_to_model(employee)
                 session.add(model)
-                session.commit()
-                employee.id = model.id
-                return employee_to_domain(model)
+
+            # Sincronizar huellas asociadas
+            del_stmt = delete(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == employee.pin)
+            session.execute(del_stmt)
+            for fp in employee.fingerprints:
+                session.add(fingerprint_to_model(fp, employee.pin))
+
+            session.commit()
+            employee.id = model.id
+
+            fp_stmt = select(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == employee.pin)
+            fps = session.scalars(fp_stmt).all()
+            return employee_to_domain(model, fingerprint_models=list(fps))
 
     def get_by_pin(self, pin: str) -> Employee | None:
         with self.session_factory() as session:
             stmt = select(EmployeeModel).where(EmployeeModel.pin == pin)
             model = session.scalars(stmt).first()
-            return employee_to_domain(model) if model else None
+            if not model:
+                return None
+            fp_stmt = select(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == pin)
+            fps = session.scalars(fp_stmt).all()
+            return employee_to_domain(model, fingerprint_models=list(fps))
 
     def get_by_id(self, employee_id: int) -> Employee | None:
         with self.session_factory() as session:
             model = session.get(EmployeeModel, employee_id)
-            return employee_to_domain(model) if model else None
+            if not model:
+                return None
+            fp_stmt = select(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == model.pin)
+            fps = session.scalars(fp_stmt).all()
+            return employee_to_domain(model, fingerprint_models=list(fps))
 
     def list_active(self, branch_id: int | None = None) -> list[Employee]:
         with self.session_factory() as session:
@@ -85,6 +106,8 @@ class SqlEmployeeRepository(EmployeeRepository):
             stmt = select(EmployeeModel).where(EmployeeModel.pin == pin)
             model = session.scalars(stmt).first()
             if model:
+                del_fps = delete(EmployeeFingerprintModel).where(EmployeeFingerprintModel.employee_pin == pin)
+                session.execute(del_fps)
                 session.delete(model)
                 session.commit()
                 return True

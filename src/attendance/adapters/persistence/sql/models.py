@@ -60,6 +60,28 @@ class EmployeeModel(Base):
     position: Mapped[str] = mapped_column(String(100), nullable=False)
     home_branch_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    curp: Mapped[str | None] = mapped_column(String(18), nullable=True, index=True)
+    rfc: Mapped[str | None] = mapped_column(String(13), nullable=True, index=True)
+    password: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    card_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+
+
+class EmployeeFingerprintModel(Base):
+    """Tabla para almacenar plantillas biométricas de huellas dactilares."""
+
+    __tablename__ = "employee_fingerprints"
+    __table_args__ = (
+        UniqueConstraint("employee_pin", "finger_index", name="uq_employee_fingerprint_pin_finger"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    employee_pin: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    finger_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    template: Mapped[str] = mapped_column(Text, nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(20), default="10.0", nullable=False)
+    valid: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class DailyAttendanceModel(Base):

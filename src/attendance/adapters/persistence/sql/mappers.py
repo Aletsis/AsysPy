@@ -13,6 +13,7 @@ from attendance.adapters.persistence.sql.models import (
     DailyAttendanceModel,
     DepartmentModel,
     DeviceModel,
+    EmployeeFingerprintModel,
     EmployeeModel,
     JustificationModel,
     RotationPatternModel,
@@ -33,6 +34,7 @@ from attendance.domain.organization.address import Address
 from attendance.domain.organization.branch import Branch
 from attendance.domain.organization.department import Department
 from attendance.domain.organization.employee import Employee, Sex
+from attendance.domain.organization.fingerprint import Fingerprint
 from attendance.domain.schedule.assignment import EmployeeScheduleAssignment
 from attendance.domain.schedule.enums import (
     AssignmentMode,
@@ -82,8 +84,23 @@ def attendance_log_to_model(entity: AttendanceLog) -> AttendanceLogModel:
 # ============================================================================
 # Employee Mappers
 # ============================================================================
-def employee_to_domain(model: EmployeeModel) -> Employee:
+def employee_to_domain(
+    model: EmployeeModel,
+    fingerprint_models: list[EmployeeFingerprintModel] | None = None,
+) -> Employee:
     """Convierte un EmployeeModel a la entidad Employee del dominio."""
+    fingerprints = []
+    if fingerprint_models:
+        fingerprints = [
+            Fingerprint(
+                finger_index=fp.finger_index,
+                template=fp.template,
+                algorithm_version=fp.algorithm_version,
+                valid=fp.valid,
+            )
+            for fp in fingerprint_models
+        ]
+
     return Employee(
         id=model.id,
         pin=model.pin,
@@ -96,6 +113,13 @@ def employee_to_domain(model: EmployeeModel) -> Employee:
         position=model.position,
         home_branch_id=model.home_branch_id,
         active=model.active,
+        email=model.email,
+        phone_number=model.phone_number,
+        curp=model.curp,
+        rfc=model.rfc,
+        password=model.password,
+        card_number=model.card_number,
+        fingerprints=fingerprints,
     )
 
 
@@ -113,6 +137,23 @@ def employee_to_model(entity: Employee) -> EmployeeModel:
         position=entity.position,
         home_branch_id=entity.home_branch_id,
         active=entity.active,
+        email=entity.email,
+        phone_number=entity.phone_number,
+        curp=entity.curp,
+        rfc=entity.rfc,
+        password=entity.password,
+        card_number=entity.card_number,
+    )
+
+
+def fingerprint_to_model(entity: Fingerprint, employee_pin: str) -> EmployeeFingerprintModel:
+    """Convierte un Value Object Fingerprint a EmployeeFingerprintModel."""
+    return EmployeeFingerprintModel(
+        employee_pin=employee_pin,
+        finger_index=entity.finger_index,
+        template=entity.template,
+        algorithm_version=entity.algorithm_version,
+        valid=entity.valid,
     )
 
 
