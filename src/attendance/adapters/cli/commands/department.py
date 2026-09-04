@@ -66,11 +66,15 @@ def cmd_department_show(args: argparse.Namespace, ctx: CLIContext) -> int:
         if branch:
             branch_name = f"{branch.name} ({branch.code})"
 
+    positions = bundle.department_repo.get_positions(dept.id) if (dept.id and hasattr(bundle.department_repo, "get_positions")) else []
+    positions_str = ", ".join(f"{p.name} (#{p.id})" for p in positions) if positions else "Ninguno asignado"
+
     rows = [
         ["ID", str(dept.id or "-")],
         ["Código", dept.code or "-"],
         ["Nombre", dept.name],
         ["Sucursal Asignada", branch_name if dept.branch_id else "Global (Todas las sucursales)"],
+        ["Puestos Asociados", positions_str],
         ["Estado", green("Activo") if dept.active else red("Inactivo")],
     ]
     print(f"\n{cyan(bold('Detalle de Departamento:'))}")
@@ -156,6 +160,47 @@ def cmd_department_delete(args: argparse.Namespace, ctx: CLIContext) -> int:
         return 1
 
 
+def cmd_department_assign_position(args: argparse.Namespace, ctx: CLIContext) -> int:
+    """Asocia un puesto de trabajo a un departamento."""
+    bundle = ctx.get_bundle(init_tables=True)
+    dept = _find_department(args, bundle)
+    if not dept or dept.id is None:
+        ident = getattr(args, "department_id", None) or getattr(args, "code", "?")
+        print(f"{red('✘ Error:')} Departamento '{ident}' no encontrado.", file=sys.stderr)
+        return 1
+
+    if not bundle.position_repo:
+        print(f"{red('✘ Error:')} El catálogo de puestos no está disponible.", file=sys.stderr)
+        return 1
+
+    pos = bundle.position_repo.get_by_id(args.position_id)
+    if not pos:
+        print(f"{red('✘ Error:')} Puesto con ID {args.position_id} no encontrado.", file=sys.stderr)
+        return 1
+
+    bundle.department_repo.assign_position(dept.id, args.position_id)
+    print(f"\n{green('✔')} Puesto {bold(pos.name)} asignado al departamento {bold(dept.name)} exitosamente.")
+    return 0
+
+
+def cmd_department_remove_position(args: argparse.Namespace, ctx: CLIContext) -> int:
+    """Remueve la asociación entre un departamento y un puesto."""
+    bundle = ctx.get_bundle(init_tables=True)
+    dept = _find_department(args, bundle)
+    if not dept or dept.id is None:
+        ident = getattr(args, "department_id", None) or getattr(args, "code", "?")
+        print(f"{red('✘ Error:')} Departamento '{ident}' no encontrado.", file=sys.stderr)
+        return 1
+
+    success = bundle.department_repo.remove_position(dept.id, args.position_id)
+    if success:
+        print(f"\n{green('✔')} Puesto #{args.position_id} desvinculado del departamento '{bold(dept.name)}' exitosamente.")
+        return 0
+    else:
+        print(f"{red('✘ Error:')} No se encontró la relación entre el departamento #{dept.id} y el puesto #{args.position_id}.", file=sys.stderr)
+        return 1
+
+
 def register_department_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Registra los subcomandos de `asistpy department`."""
     dept_parser = subparsers.add_parser(
@@ -226,3 +271,27 @@ def register_department_subparser(subparsers: argparse._SubParsersAction) -> Non
     list_parser.add_argument("--branch-id", type=int, help="Filtrar por ID de sucursal")
     list_parser.add_argument("--active-only", action="store_true", help="Mostrar únicamente departamentos activos")
     list_parser.set_defaults(func=cmd_department_list)
+
+    # asistpy department assign-position
+    assign_pos = dept_subparsers.add_parser(
+        "assign-position",
+        parents=[get_common_parser()],
+        help="Asocia un puesto de trabajo al departamento",
+    )
+    assign_group = assign_pos.add_mutually_exclusive_group(required=True)
+    assign_group.add_argument("--department-id", type=int, help="ID del departamento")
+    assign_group.add_argument("--code", help="Código del departamento")
+    assign_pos.add_argument("--position-id", type=int, required=True, help="ID del puesto a asociar")
+    assign_pos.set_defaults(func=cmd_department_assign_position)
+
+    # asistpy department remove-position
+    remove_pos = dept_subparsers.add_parser(
+        "remove-position",
+        parents=[get_common_parser()],
+        help="Remueve la asociación de un puesto de trabajo del departamento",
+    )
+    remove_group = remove_pos.add_mutually_exclusive_group(required=True)
+    remove_group.add_argument("--department-id", type=int, help="ID del departamento")
+    remove_group.add_argument("--code", help="Código del departamento")
+    remove_pos.add_argument("--position-id", type=int, required=True, help="ID del puesto a desvincular")
+    remove_pos.set_defaults(func=cmd_department_remove_position)

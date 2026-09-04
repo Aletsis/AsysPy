@@ -11,6 +11,7 @@ from attendance.adapters.cli.commands import (
     register_department_subparser,
     register_device_subparser,
     register_employee_subparser,
+    register_position_subparser,
     register_report_subparser,
     register_schedule_subparser,
     register_shift_subparser,
@@ -44,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     register_device_subparser(subparsers)
     register_employee_subparser(subparsers)
     register_department_subparser(subparsers)
+    register_position_subparser(subparsers)
     register_branch_subparser(subparsers)
     register_shift_subparser(subparsers)
     register_schedule_subparser(subparsers)

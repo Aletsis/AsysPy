@@ -5,6 +5,7 @@ import sys
 
 from attendance.adapters.cli.context import CLIContext, get_common_parser
 from attendance.adapters.cli.formatters import bold, cyan, green, red, render_table, yellow
+from attendance.domain.common.exceptions import ValidationError
 from attendance.domain.organization.address import Address
 from attendance.domain.organization.branch import Branch
 
@@ -30,17 +31,20 @@ def cmd_branch_add(args: argparse.Namespace, ctx: CLIContext) -> int:
             state=args.state or "",
         )
 
-    branch = Branch(
-        name=args.name,
-        code=args.code,
-        timezone=args.timezone or "America/Mexico_City",
-        address=address,
-        active=not args.inactive,
-        email=args.email,
-        phone_number=args.phone,
-    )
-
-    saved = bundle.branch_repo.save(branch)
+    try:
+        branch = Branch(
+            name=args.name,
+            code=args.code,
+            timezone=args.timezone or "America/Mexico_City",
+            address=address,
+            active=not args.inactive,
+            email=args.email,
+            phone_number=args.phone,
+        )
+        saved = bundle.branch_repo.save(branch)
+    except ValidationError as e:
+        print(f"{red('✘ Error de validación:')} {e}", file=sys.stderr)
+        return 1
     print(f"\n{green('✔')} Sucursal {bold(saved.name)} (Código: {saved.code}) registrada exitosamente con ID {saved.id}.")
     headers = ["ID", "Código", "Nombre", "Zona Horaria", "Correo", "Teléfono", "Estado"]
     rows = [[
@@ -138,33 +142,38 @@ def cmd_branch_edit(args: argparse.Namespace, ctx: CLIContext) -> int:
         print(f"{red('✘ Error:')} Sucursal no encontrada.", file=sys.stderr)
         return 1
 
-    if args.name is not None:
-        branch.name = args.name
-    if args.timezone is not None:
-        branch.timezone = args.timezone
-    if args.active:
-        branch.active = True
-    elif args.inactive:
-        branch.active = False
+    try:
+        if args.name is not None:
+            branch.name = args.name
+        if args.timezone is not None:
+            branch.timezone = args.timezone
+        if args.active:
+            branch.active = True
+        elif args.inactive:
+            branch.active = False
 
-    if args.email is not None:
-        branch.email = args.email
-    if args.phone is not None:
-        branch.phone_number = args.phone
+        if args.email is not None:
+            branch.email = args.email
+        if args.phone is not None:
+            branch.phone_number = args.phone
 
-    if args.city or args.state or args.street or args.postal_code:
-        curr = branch.address
-        branch.address = Address(
-            street=args.street or (curr.street if curr else ""),
-            exterior_number=curr.exterior_number if curr else "",
-            interior_number=curr.interior_number if curr else None,
-            postal_code=args.postal_code or (curr.postal_code if curr else ""),
-            neighborhood=curr.neighborhood if curr else "",
-            municipality=args.city or (curr.municipality if curr else ""),
-            state=args.state or (curr.state if curr else ""),
-        )
+        if args.city or args.state or args.street or args.postal_code:
+            curr = branch.address
+            branch.address = Address(
+                street=args.street or (curr.street if curr else ""),
+                exterior_number=curr.exterior_number if curr else "",
+                interior_number=curr.interior_number if curr else None,
+                postal_code=args.postal_code or (curr.postal_code if curr else ""),
+                neighborhood=curr.neighborhood if curr else "",
+                municipality=args.city or (curr.municipality if curr else ""),
+                state=args.state or (curr.state if curr else ""),
+            )
 
-    saved = bundle.branch_repo.save(branch)
+        saved = bundle.branch_repo.save(branch)
+    except ValidationError as err:
+        print(f"{red('✘ Error de validación:')} {err}", file=sys.stderr)
+        return 1
+
     print(f"\n{green('✔')} Sucursal {bold(saved.name)} (Código: {saved.code}) actualizada exitosamente.")
     return 0
 

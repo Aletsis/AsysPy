@@ -12,17 +12,18 @@
 4. [Opciones Globales](#-opciones-globales)
 5. [CRUD de Sucursales (`asistpy branch`)](#-crud-de-sucursales-asistpy-branch)
 6. [CRUD de Departamentos (`asistpy department`)](#-crud-de-departamentos-asistpy-department)
-7. [CRUD de Empleados (`asistpy employee`)](#-crud-de-empleados-asistpy-employee)
-8. [CRUD de Turnos de Trabajo (`asistpy shift`)](#-crud-de-turnos-de-trabajo-asistpy-shift)
-9. [CRUD de Asignaciones de Horario (`asistpy schedule`)](#-crud-de-asignaciones-de-horario-asistpy-schedule)
-10. [CRUD y Control de Dispositivos Biométricos (`asistpy device`)](#-crud-y-control-de-dispositivos-biométricos-asistpy-device)
-11. [Control de Asistencia y Jornadas (`asistpy attendance`)](#-control-de-asistencia-y-jornadas-asistpy-attendance)
-12. [Reportes y Exportación (`asistpy report`)](#-reportes-y-exportación-asistpy-report)
-13. [Gestión de Base de Datos (`asistpy db`)](#-gestión-de-base-de-datos-asistpy-db)
-14. [Demonio en Segundo Plano (`asistpy worker`)](#-demonio-en-segundo-plano-asistpy-worker)
-15. [Despliegue con Docker y Docker Compose](#-despliegue-con-docker-y-docker-compose)
-16. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
-17. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
+7. [CRUD de Puestos de Trabajo (`asistpy position`)](#-crud-de-puestos-de-trabajo-asistpy-position)
+8. [CRUD de Empleados (`asistpy employee`)](#-crud-de-empleados-asistpy-employee)
+9. [CRUD de Turnos de Trabajo (`asistpy shift`)](#-crud-de-turnos-de-trabajo-asistpy-shift)
+10. [CRUD de Asignaciones de Horario (`asistpy schedule`)](#-crud-de-asignaciones-de-horario-asistpy-schedule)
+11. [CRUD y Control de Dispositivos Biométricos (`asistpy device`)](#-crud-y-control-de-dispositivos-biométricos-asistpy-device)
+12. [Control de Asistencia y Jornadas (`asistpy attendance`)](#-control-de-asistencia-y-jornadas-asistpy-attendance)
+13. [Reportes y Exportación (`asistpy report`)](#-reportes-y-exportación-asistpy-report)
+14. [Gestión de Base de Datos (`asistpy db`)](#-gestión-de-base-de-datos-asistpy-db)
+15. [Demonio en Segundo Plano (`asistpy worker`)](#-demonio-en-segundo-plano-asistpy-worker)
+16. [Despliegue con Docker y Docker Compose](#-despliegue-con-docker-y-docker-compose)
+17. [Automatización con Crontab / Systemd](#-automatización-con-crontab--systemd)
+18. [Códigos de Salida (Exit Codes)](#-códigos-de-salida-exit-codes)
 
 ---
 
@@ -31,7 +32,7 @@
 La CLI `asistpy` actúa como un **Adaptador Primario o Conductor (Driving Adapter)** dentro de la Arquitectura Hexagonal del sistema. Permite ejecutar directamente todos los casos de uso de la aplicación (`application`) contra cualquier motor de persistencia configurado (SQLite, PostgreSQL, MySQL, SQL Server o memoria) sin necesidad de iniciar servidores web ni interfaces gráficas.
 
 Características clave:
-- **CRUD Completo de Catálogos**: Alta, consulta detallada, listado, edición y eliminación de sucursales, departamentos, empleados, turnos, horarios y dispositivos.
+- **CRUD Completo de Catálogos**: Alta, consulta detallada, listado, edición y eliminación de sucursales, departamentos, puestos, empleados, turnos, horarios y dispositivos.
 - **Cero dependencias externas forzadas**: Funciona nativamente sobre la biblioteca estándar de Python (`argparse`), con renderizador interno de tablas Unicode/ASCII y soporte de colores ANSI (respetando `NO_COLOR`).
 - **Soporte nativo de `.env`**: Lee automáticamente las variables de entorno locales o las provistas por parámetro.
 - **Portabilidad**: Ejecutable como comando del sistema (`asistpy`) o como módulo de Python (`python -m attendance.cli` / `python -m attendance.adapters.cli`).
@@ -82,13 +83,15 @@ asistpy [OPCIONES_GLOBALES] <GRUPO> <ACCION> [OPCIONES_ESPECIFICAS]
 Los grupos principales disponibles son:
 - `branch`: Catálogo CRUD de sucursales u oficinas físicas.
 - `department`: Catálogo CRUD de departamentos u áreas operativas.
-- `employee`: Catálogo CRUD de empleados y personal.
+- `position`: Catálogo CRUD de puestos o cargos laborales y vinculación con departamentos.
+- `employee`: Catálogo CRUD de empleados y personal con atributos biométricos y fiscales.
 - `shift`: Catálogo CRUD de turnos de trabajo y tolerancias.
 - `schedule`: Catálogo CRUD y asignación de horarios a empleados.
 - `device`: Catálogo CRUD, sondeo y sincronización de relojes biométricos.
 - `attendance`: Evaluación diaria de horarios, consulta y ajustes con auditoría.
 - `report`: Consolidación y exportación a formatos de reporte (pantalla, CSV, JSON).
 - `db`: Inicialización y diagnóstico de la base de datos.
+- `worker`: Demonio en segundo plano para sincronización automática 24/7.
 
 ---
 
@@ -267,14 +270,126 @@ asistpy department delete --code "CH-01" --force
 asistpy department delete --department-id 1 --force
 ```
 
+### 6. `asistpy department assign-position` (Vincular Puesto)
+```bash
+# Asociar un puesto al departamento
+asistpy department assign-position --department-id 1 --position-id 2
+# o por código:
+asistpy department assign-position --code "RH-01" --position-id 2
+```
+
+### 7. `asistpy department remove-position` (Desvincular Puesto)
+```bash
+asistpy department remove-position --department-id 1 --position-id 2
+```
+
+---
+
+## 💼 CRUD de Puestos de Trabajo (`asistpy position`)
+
+Permite administrar el catálogo canónico de puestos o cargos de la empresa y gestionar su vinculación N:M con los departamentos organizacionales.
+
+### 1. `asistpy position add` (Crear)
+```bash
+# Registrar un puesto básico
+asistpy position add --name "Operador CNC" --code "CNC-01"
+
+# Registrar con descripción completa
+asistpy position add \
+  --name "Desarrollador Senior" \
+  --code "DEV-01" \
+  --description "Desarrollo y arquitectura backend de sistemas de control"
+
+# Registrar puesto directamente inactivo
+asistpy position add --name "Puesto Temporal" --code "TMP-01" --inactive
+```
+
+**Salida de ejemplo:**
+```text
+✔ Puesto Desarrollador Senior registrado exitosamente con ID 1.
+┌────┬────────┬──────────────────────┬──────────────────────────────────────────┬────────┐
+│ ID │ Código │ Nombre               │ Descripción                              │ Estado │
+├────┼────────┼──────────────────────┼──────────────────────────────────────────┼────────┤
+│  1 │ DEV-01 │ Desarrollador Senior │ Desarrollo y arquitectura backend ...    │ Activo │
+└────┴────────┴──────────────────────┴──────────────────────────────────────────┴────────┘
+```
+
+### 2. `asistpy position show` (Ver Detalle)
+```bash
+# Consultar por código
+asistpy position show --code "DEV-01"
+
+# Consultar por ID
+asistpy position show --id 1
+
+# Consultar por nombre
+asistpy position show --name "Desarrollador Senior"
+```
+
+**Salida de ejemplo:**
+```text
+Detalle de Puesto:
+┌─────────────────────────┬────────────────────────────────────────────────────────┐
+│ Propiedad               │ Valor                                                  │
+├─────────────────────────┼────────────────────────────────────────────────────────┤
+│ ID                      │ 1                                                      │
+│ Código                  │ DEV-01                                                 │
+│ Nombre                  │ Desarrollador Senior                                   │
+│ Descripción             │ Desarrollo y arquitectura backend de sistemas...      │
+│ Departamentos Asociados │ Sistemas (#1), Innovación (#3)                         │
+│ Estado                  │ Activo                                                 │
+└─────────────────────────┴────────────────────────────────────────────────────────┘
+```
+
+### 3. `asistpy position list` (Listar)
+```bash
+# Listar todos los puestos
+asistpy position list
+
+# Filtrar por departamento asociado
+asistpy position list --department-id 1
+
+# Filtrar solo activos
+asistpy position list --active-only
+```
+
+### 4. `asistpy position edit` (Modificar)
+```bash
+# Modificar nombre y descripción
+asistpy position edit --code "DEV-01" --name "Líder Técnico Backend" --new-code "TL-01"
+
+# Desactivar puesto
+asistpy position edit --code "TL-01" --inactive
+
+# Reactivar puesto
+asistpy position edit --code "TL-01" --active
+```
+
+### 5. `asistpy position delete` (Eliminar)
+```bash
+asistpy position delete --code "TL-01" --force
+# o por ID:
+asistpy position delete --id 1 --force
+```
+
+### 6. `asistpy position assign-department` / `remove-department` (Relación N:M)
+```bash
+# Asociar a departamento
+asistpy position assign-department --position-id 1 --department-id 2
+
+# Desasociar de departamento
+asistpy position remove-department --position-id 1 --department-id 2
+```
+
 ---
 
 ## 👥 CRUD de Empleados (`asistpy employee`)
 
-Permite gestionar el padrón de trabajadores y colaboradores que checan asistencia en los relojes biométricos.
+Permite gestionar el padrón de trabajadores y colaboradores que checan asistencia en los relojes biométricos, incluyendo datos de contacto, fiscales, llaves de acceso en dispositivos y credenciales RFID.
 
 ### 1. `asistpy employee add` (Crear)
 ```bash
+# Alta completa con atributos de contacto, fiscales y credenciales de checador
 asistpy employee add \
   --pin "E101" \
   --first-name "Carlos" \
@@ -282,45 +397,64 @@ asistpy employee add \
   --maternal-last-name "López" \
   --hire-date 2024-03-15 \
   --sex male \
+  --position-id 1 \
   --position "Operador CNC" \
   --department-id 2 \
-  --branch-id 1
+  --branch-id 1 \
+  --email "carlos.gomez@empresa.com" \
+  --phone "+52 33 1234 5678" \
+  --curp "GOLC880315HDFMNR01" \
+  --rfc "GOLC880315ABC" \
+  --password "1234" \
+  --card-number "CARD-1001"
 ```
 
 **Salida de ejemplo:**
 ```text
-✔ Empleado Carlos Gómez (PIN: E101) registrado exitosamente.
-┌────┬──────┬─────────────────┬──────────────┬──────────────┬──────────┬───────────────┬────────┐
-│ ID │ PIN  │ Nombre Completo │ Puesto       │ Departamento │ Sucursal │ Fecha Ingreso │ Estado │
-├────┼──────┼─────────────────┼──────────────┼──────────────┼──────────┼───────────────┼────────┤
-│  1 │ E101 │ Carlos Gómez    │ Operador CNC │            2 │        1 │  2024-03-15   │ Activo │
-└────┴──────┴─────────────────┴──────────────┴──────────────┴──────────┴───────────────┴────────┘
+✔ Empleado Carlos Gómez (PIN: E101) registrado exitosamente con ID 1.
+┌────┬──────┬─────────────────┬──────────────────────┬──────────┬─────────────┬────────────────────┬───────────┬────────┐
+│ ID │ PIN  │ Nombre Completo │ Puesto               │ Depto ID │ Sucursal ID │ CURP               │ Tarjeta   │ Estado │
+├────┼──────┼─────────────────┼──────────────────────┼──────────┼─────────────┼────────────────────┼───────────┼────────┤
+│  1 │ E101 │ Carlos Gómez    │ Operador CNC (ID:1)  │        2 │           1 │ GOLC880315HDFMNR01 │ CARD-1001 │ Activo │
+└────┴──────┴─────────────────┴──────────────────────┴──────────┴─────────────┴────────────────────┴───────────┴────────┘
 ```
 
 ### 2. `asistpy employee show` (Ver Detalle)
 ```bash
+# Por PIN
 asistpy employee show --pin "E101"
+
+# Por ID interno
+asistpy employee show --id 1
 ```
 
 **Salida de ejemplo:**
 ```text
 Detalle de Empleado:
-┌───────────────────────┬──────────────┐
-│ Propiedad             │ Valor        │
-├───────────────────────┼──────────────┤
-│ ID                    │ 1            │
-│ PIN / Identificador   │ E101         │
-│ Nombre Completo       │ Carlos Gómez │
-│ Nombre                │ Carlos       │
-│ Apellido Paterno      │ Gómez        │
-│ Apellido Materno      │ López        │
-│ Fecha de Contratación │ 2024-03-15   │
-│ Sexo                  │ male         │
-│ Puesto / Cargo        │ Operador CNC │
-│ Departamento ID       │ 2            │
-│ Sucursal Base ID      │ 1            │
-│ Estado                │ Activo       │
-└───────────────────────┴──────────────┘
+┌───────────────────────────┬───────────────────────────┐
+│ Propiedad                 │ Valor                     │
+├───────────────────────────┼───────────────────────────┤
+│ ID                        │ 1                         │
+│ PIN / Identificador       │ E101                      │
+│ Nombre Completo           │ Carlos Gómez              │
+│ Nombre                    │ Carlos                    │
+│ Apellido Paterno          │ Gómez                     │
+│ Apellido Materno          │ López                     │
+│ Fecha de Contratación     │ 2024-03-15                │
+│ Sexo                      │ male                      │
+│ Puesto / Cargo            │ Operador CNC              │
+│ Puesto ID                 │ 1                         │
+│ Departamento ID           │ 2                         │
+│ Sucursal Base ID          │ 1                         │
+│ Correo Electrónico        │ carlos.gomez@empresa.com  │
+│ Teléfono                  │ +52 33 1234 5678          │
+│ CURP                      │ GOLC880315HDFMNR01        │
+│ RFC                       │ GOLC880315ABC             │
+│ Contraseña / Clave        │ ********                  │
+│ Tarjeta RFID / Proximidad │ CARD-1001                 │
+│ Huellas Biométricas       │ 2 registrada(s)           │
+│ Estado                    │ Activo                    │
+└───────────────────────────┴───────────────────────────┘
 ```
 
 ### 3. `asistpy employee list` (Listar)
@@ -331,6 +465,12 @@ asistpy employee list
 # Filtrar por sucursal
 asistpy employee list --branch-id 1
 
+# Filtrar por departamento
+asistpy employee list --department-id 2
+
+# Filtrar por puesto laboral
+asistpy employee list --position-id 1
+
 # Filtrar solo empleados activos
 asistpy employee list --active-only
 
@@ -340,20 +480,27 @@ asistpy employee list --pin "101"
 
 **Salida de ejemplo:**
 ```text
-┌────┬──────┬─────────────────┬──────────────┬──────────────┬──────────┬───────────────┬────────┐
-│ ID │ PIN  │ Nombre Completo │ Puesto       │ Departamento │ Sucursal │ Fecha Ingreso │ Estado │
-├────┼──────┼─────────────────┼──────────────┼──────────────┼──────────┼───────────────┼────────┤
-│  1 │ E101 │ Carlos Gómez    │ Operador CNC │            2 │        1 │  2024-03-15   │ Activo │
-│  2 │ E102 │ Ana Martínez    │ RRHH General │            1 │        1 │  2023-01-10   │ Activo │
-└────┴──────┴─────────────────┴──────────────┴──────────────┴──────────┴───────────────┴────────┘
+┌────┬──────┬─────────────────┬──────────────────────┬───────┬──────────┬───────────────┬────────┐
+│ ID │ PIN  │ Nombre Completo │ Puesto               │ Depto │ Sucursal │ Fecha Ingreso │ Estado │
+├────┼──────┼─────────────────┼──────────────────────┼───────┼──────────┼───────────────┼────────┤
+│  1 │ E101 │ Carlos Gómez    │ Operador CNC (#1)    │     2 │        1 │  2024-03-15   │ Activo │
+│  2 │ E102 │ Ana Martínez    │ RRHH General (#2)    │     1 │        1 │  2023-01-10   │ Activo │
+└────┴──────┴─────────────────┴──────────────────────┴───────┴──────────┴───────────────┴────────┘
 
 Total empleados: 2
 ```
 
 ### 4. `asistpy employee edit` (Modificar)
 ```bash
+# Modificar datos personales y de contacto
+asistpy employee edit \
+  --pin "E101" \
+  --email "carlos.gomez.nuevo@empresa.com" \
+  --phone "+52 33 9999 8888" \
+  --card-number "CARD-2002"
+
 # Cambiar de puesto y departamento
-asistpy employee edit --pin "E101" --position "Supervisor de Turno" --department-id 1
+asistpy employee edit --pin "E101" --position-id 2 --position "Supervisor de Turno" --department-id 1
 
 # Dar de baja (inactivar)
 asistpy employee edit --pin "E101" --inactive
@@ -364,7 +511,11 @@ asistpy employee edit --pin "E101" --active
 
 ### 5. `asistpy employee delete` (Eliminar)
 ```bash
+# Eliminar por PIN
 asistpy employee delete --pin "E101" --force
+
+# Eliminar por ID interno
+asistpy employee delete --id 1 --force
 ```
 
 ---

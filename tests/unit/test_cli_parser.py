@@ -61,6 +61,77 @@ def test_build_parser_recognizes_subcommands() -> None:
     assert args_rep.report_action == "summary"
     assert args_rep.format == "csv"
 
+    # position subcommands
+    args_pos_add = parser.parse_args([
+        "position",
+        "add",
+        "--name",
+        "Analista QA",
+        "--code",
+        "QA-01",
+        "--description",
+        "Pruebas de software",
+    ])
+    assert args_pos_add.command == "position"
+    assert args_pos_add.position_action == "add"
+    assert args_pos_add.name == "Analista QA"
+    assert args_pos_add.code == "QA-01"
+
+    args_pos_list = parser.parse_args(["position", "list", "--department-id", "2", "--active-only"])
+    assert args_pos_list.command == "position"
+    assert args_pos_list.position_action == "list"
+    assert args_pos_list.department_id == 2
+    assert args_pos_list.active_only is True
+
+    # employee add with new attributes
+    args_emp_add = parser.parse_args([
+        "employee",
+        "add",
+        "--pin",
+        "E999",
+        "--first-name",
+        "Pedro",
+        "--paternal-last-name",
+        "Perez",
+        "--email",
+        "pedro@empresa.com",
+        "--phone",
+        "+523312345678",
+        "--curp",
+        "PEPE800101HDFRRN09",
+        "--rfc",
+        "PEPE800101ABC",
+        "--password",
+        "123456",
+        "--card-number",
+        "CARD-1234",
+        "--position-id",
+        "5",
+    ])
+    assert args_emp_add.command == "employee"
+    assert args_emp_add.employee_action == "add"
+    assert args_emp_add.email == "pedro@empresa.com"
+    assert args_emp_add.phone == "+523312345678"
+    assert args_emp_add.curp == "PEPE800101HDFRRN09"
+    assert args_emp_add.rfc == "PEPE800101ABC"
+    assert args_emp_add.password == "123456"
+    assert args_emp_add.card_number == "CARD-1234"
+    assert args_emp_add.position_id == 5
+
+    # department assign-position
+    args_dept_assign = parser.parse_args([
+        "department",
+        "assign-position",
+        "--department-id",
+        "3",
+        "--position-id",
+        "5",
+    ])
+    assert args_dept_assign.command == "department"
+    assert args_dept_assign.department_action == "assign-position"
+    assert args_dept_assign.department_id == 3
+    assert args_dept_assign.position_id == 5
+
 
 def test_global_arguments_both_orders() -> None:
     parser = build_parser()
