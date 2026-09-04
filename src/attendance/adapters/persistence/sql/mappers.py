@@ -112,6 +112,7 @@ def employee_to_domain(
         hire_date=model.hire_date,
         sex=Sex(model.sex),
         department_id=model.department_id,
+        position_id=model.position_id,
         position=model.position,
         home_branch_id=model.home_branch_id,
         active=model.active,
@@ -136,6 +137,7 @@ def employee_to_model(entity: Employee) -> EmployeeModel:
         hire_date=entity.hire_date,
         sex=entity.sex.value,
         department_id=entity.department_id,
+        position_id=entity.position_id,
         position=entity.position,
         home_branch_id=entity.home_branch_id,
         active=entity.active,
@@ -670,6 +672,7 @@ def position_to_domain(model: PositionModel) -> Position:
         id=model.id,
         name=model.name,
         code=model.code,
+        description=model.description,
         active=model.active,
     )
 
@@ -680,6 +683,7 @@ def position_to_model(entity: Position) -> PositionModel:
         id=entity.id if entity.id is not None else None,
         name=entity.name,
         code=entity.code,
+        description=entity.description,
         active=entity.active,
     )
 

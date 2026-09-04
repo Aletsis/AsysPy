@@ -120,7 +120,7 @@ class SqlDepartmentRepository(DepartmentRepository):
                 )
             )
             session.commit()
-            return result.rowcount > 0
+            return bool(getattr(result, "rowcount", 0) > 0)
 
     def get_positions(
         self, department_id: int, active_only: bool = False

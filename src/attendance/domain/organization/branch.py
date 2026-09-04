@@ -1,9 +1,10 @@
 """Entidad Branch (Sucursal)."""
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 from attendance.domain.common.exceptions import ValidationError
+
 from .address import Address
 
 # Expresiones regulares para validaciones de contacto
@@ -34,9 +35,12 @@ class Branch:
             self.name = str(self.name).strip()
 
         if self.code is not None:
-            self.code = str(self.code).strip().upper()
+            cleaned_code = str(self.code).strip().upper()
+            self.code = cleaned_code if cleaned_code else ""
 
-        if self.timezone is not None:
+        if self.timezone is None:
+            self.timezone = "America/Mexico_City"
+        else:
             self.timezone = str(self.timezone).strip()
 
         if self.email is not None:
@@ -60,13 +64,14 @@ class Branch:
         if len(self.name) > 100:
             raise ValidationError("El nombre de la sucursal no puede exceder los 100 caracteres.")
 
-        # Validación de Código
-        if not self.code:
-            raise ValidationError("El código de la sucursal no puede estar vacío.")
-        if any(c.isspace() for c in self.code):
-            raise ValidationError("El código de la sucursal no puede contener espacios en blanco.")
-        if len(self.code) > 30:
-            raise ValidationError("El código de la sucursal no puede exceder los 30 caracteres.")
+        # Validación de Código (opcional)
+        if self.code is not None:
+            if not self.code:
+                raise ValidationError("El código de la sucursal no puede estar vacío.")
+            if any(c.isspace() for c in self.code):
+                raise ValidationError("El código de la sucursal no puede contener espacios en blanco.")
+            if len(self.code) > 30:
+                raise ValidationError("El código de la sucursal no puede exceder los 30 caracteres.")
 
         # Validación de Zona Horaria
         if not self.timezone:
@@ -106,6 +111,54 @@ class Branch:
     # ------------------------------------------------------------------------
     # Propiedades alias en español
     # ------------------------------------------------------------------------
+    @property
+    def nombre(self) -> str:
+        return self.name
+
+    @nombre.setter
+    def nombre(self, value: str) -> None:
+        self.name = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def codigo(self) -> str:
+        return self.code
+
+    @codigo.setter
+    def codigo(self, value: str) -> None:
+        self.code = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def direccion(self) -> Address | None:
+        return self.address
+
+    @direccion.setter
+    def direccion(self, value: Address | None) -> None:
+        self.address = value
+        self.validate()
+
+    @property
+    def zona_horaria(self) -> str:
+        return self.timezone
+
+    @zona_horaria.setter
+    def zona_horaria(self, value: str) -> None:
+        self.timezone = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def activo(self) -> bool:
+        return self.active
+
+    @activo.setter
+    def activo(self, value: bool) -> None:
+        self.active = value
+        self.validate()
+
     @property
     def correo(self) -> str | None:
         return self.email

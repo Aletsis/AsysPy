@@ -38,10 +38,67 @@ def test_branch_valid_creation():
     assert b.telefono is None
 
 
+def test_branch_minimal_creation():
+    b = Branch(name="  Sucursal Periférico  ", code="  peri-01  ")
+    assert b.name == "Sucursal Periférico"
+    assert b.code == "PERI-01"
+    assert b.id is None
+    assert b.address is None
+    assert b.timezone == "America/Mexico_City"
+    assert b.active is True
+    assert b.email is None
+    assert b.phone_number is None
+
+    # Alias
+    assert b.nombre == "Sucursal Periférico"
+    assert b.codigo == "PERI-01"
+    assert b.direccion is None
+    assert b.zona_horaria == "America/Mexico_City"
+    assert b.activo is True
+
+
+def test_branch_timezone_default_fallback():
+    b1 = Branch(name="Sucursal Sur", code="SUR-01", timezone=None)  # type: ignore[arg-type]
+    assert b1.timezone == "America/Mexico_City"
+
+
+def test_branch_spanish_property_aliases():
+    from attendance.domain.organization.address import Address
+
+    b = _make_valid_branch()
+    b.nombre = "  Sucursal Poniente  "
+    b.codigo = "  pon-01  "
+    b.zona_horaria = "America/Tijuana"
+    b.activo = False
+    addr = Address(
+        street="Av. Siempre Viva",
+        exterior_number="742",
+        interior_number=None,
+        postal_code="01000",
+        neighborhood="Centro",
+        municipality="Cuauhtémoc",
+        state="CDMX",
+    )
+    b.direccion = addr
+
+    assert b.name == "Sucursal Poniente"
+    assert b.code == "PON-01"
+    assert b.timezone == "America/Tijuana"
+    assert b.active is False
+    assert b.address == addr
+
+    assert b.nombre == "Sucursal Poniente"
+    assert b.codigo == "PON-01"
+    assert b.zona_horaria == "America/Tijuana"
+    assert b.activo is False
+    assert b.direccion == addr
+
+
 @pytest.mark.parametrize("invalid_name", ["", "   ", "N" * 101])
 def test_branch_invalid_name(invalid_name):
     with pytest.raises(ValidationError):
         _make_valid_branch(name=invalid_name)
+
 
 
 @pytest.mark.parametrize("invalid_code", ["", "   ", "C" * 31, "CODE 01", "C\t01"])

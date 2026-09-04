@@ -126,9 +126,20 @@ def test_sql_employee_repository(session_factory: sessionmaker[Session]) -> None
 
     # Desactivar y verificar
     by_pin.active = False
+    by_pin.position_id = 99
     repo.save(by_pin)
     assert len(repo.list_active(branch_id=10)) == 0
     assert len(repo.list_all(branch_id=10)) == 1
+    assert repo.count(branch_id=10) == 1
+    assert repo.count(branch_id=10, active_only=True) == 0
+    assert repo.count(position_id=99) == 1
+    assert repo.exists_by_pin("EMP100") is True
+    assert repo.exists_by_id(saved.id) is True
+
+    # Eliminar por ID
+    assert repo.delete_by_id(saved.id) is True
+    assert repo.exists_by_id(saved.id) is False
+    assert repo.count() == 0
 
 
 # ============================================================================

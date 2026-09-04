@@ -1,9 +1,9 @@
 """Entidad Employee y Enums de organización."""
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
-import re
 
 from attendance.domain.common.exceptions import ValidationError
 from attendance.domain.organization.fingerprint import Fingerprint
@@ -29,16 +29,17 @@ class Sex(str, Enum):
 class Employee:
     """Entidad que representa a un colaborador en el dominio organizacional."""
 
-    id: int | None
     pin: str
     first_name: str
     paternal_last_name: str
-    maternal_last_name: str | None
-    hire_date: date
     sex: Sex
-    department_id: int
-    position: str
-    home_branch_id: int
+    id: int | None = None
+    maternal_last_name: str | None = None
+    hire_date: date = field(default_factory=date.today)
+    department_id: int = 1
+    position_id: int | None = None
+    position: str = "General"
+    home_branch_id: int = 1
     active: bool = True
     email: str | None = None
     phone_number: str | None = None
@@ -54,6 +55,9 @@ class Employee:
 
     def _normalize(self) -> None:
         """Normaliza cadenas y tipos de datos antes de validar."""
+        if self.hire_date is None:  # type: ignore[comparison-overlap]
+            self.hire_date = date.today()
+
         if self.pin is not None:
             self.pin = str(self.pin).strip()
 
@@ -74,7 +78,10 @@ class Employee:
                 pass  # La validación generará el ValidationError correspondiente
 
         if self.position is not None:
-            self.position = str(self.position).strip()
+            cleaned_position = str(self.position).strip()
+            self.position = cleaned_position
+        else:
+            self.position = "General"
 
         if self.email is not None:
             cleaned_email = str(self.email).strip().lower()
@@ -134,17 +141,24 @@ class Employee:
         if self.maternal_last_name is not None and len(self.maternal_last_name) > 100:
             raise ValidationError("El apellido materno del empleado no puede exceder los 100 caracteres.")
 
-        # Validación de Fecha de Contratación
-        if not isinstance(self.hire_date, date):
-            raise ValidationError("La fecha de ingreso debe ser una fecha válida.")
-
-        # Validación de Sexo
+        # Validación de Sexo (obligatorio)
+        if self.sex is None:
+            raise ValidationError("El sexo del empleado es obligatorio. Debe ser 'male' o 'female'.")
         if not isinstance(self.sex, Sex):
             raise ValidationError(f"El sexo del empleado es inválido: {self.sex}. Debe ser 'male' o 'female'.")
 
-        # Validación de Departamento
+        # Validación de Fecha de Contratación (obligatorio tras normalización)
+        if not isinstance(self.hire_date, date):
+            raise ValidationError("La fecha de ingreso debe ser una fecha válida.")
+
+        # Validación de Departamento (entero positivo)
         if not isinstance(self.department_id, int) or isinstance(self.department_id, bool) or self.department_id <= 0:
             raise ValidationError("El ID de departamento debe ser un entero positivo.")
+
+        # Validación de Puesto ID (opcional)
+        if self.position_id is not None:
+            if not isinstance(self.position_id, int) or isinstance(self.position_id, bool) or self.position_id <= 0:
+                raise ValidationError("El ID de puesto debe ser un entero positivo.")
 
         # Validación de Puesto
         if not self.position:
@@ -152,7 +166,7 @@ class Employee:
         if len(self.position) > 100:
             raise ValidationError("El puesto de trabajo no puede exceder los 100 caracteres.")
 
-        # Validación de Sucursal Base
+        # Validación de Sucursal Base (entero positivo)
         if not isinstance(self.home_branch_id, int) or isinstance(self.home_branch_id, bool) or self.home_branch_id <= 0:
             raise ValidationError("El ID de sucursal base debe ser un entero positivo.")
 
@@ -291,6 +305,63 @@ class Employee:
     @huellas.setter
     def huellas(self, value: list[Fingerprint]) -> None:
         self.fingerprints = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def puesto_id(self) -> int | None:
+        return self.position_id
+
+    @puesto_id.setter
+    def puesto_id(self, value: int | None) -> None:
+        self.position_id = value
+        self.validate()
+
+    @property
+    def puesto(self) -> str:
+        return self.position
+
+    @puesto.setter
+    def puesto(self, value: str) -> None:
+        self.position = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def departamento_id(self) -> int:
+        return self.department_id
+
+    @departamento_id.setter
+    def departamento_id(self, value: int) -> None:
+        self.department_id = value
+        self.validate()
+
+    @property
+    def sucursal_base_id(self) -> int:
+        return self.home_branch_id
+
+    @sucursal_base_id.setter
+    def sucursal_base_id(self, value: int) -> None:
+        self.home_branch_id = value
+        self.validate()
+
+    @property
+    def fecha_ingreso(self) -> date:
+        return self.hire_date
+
+    @fecha_ingreso.setter
+    def fecha_ingreso(self, value: date) -> None:
+        self.hire_date = value
+        self._normalize()
+        self.validate()
+
+    @property
+    def sexo(self) -> Sex:
+        return self.sex
+
+    @sexo.setter
+    def sexo(self, value: Sex | str) -> None:
+        self.sex = value  # type: ignore
         self._normalize()
         self.validate()
 

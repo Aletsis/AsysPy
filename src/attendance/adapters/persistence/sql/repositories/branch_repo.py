@@ -1,6 +1,6 @@
 """Adaptador SQLAlchemy para BranchRepository (Sucursales)."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from attendance.adapters.persistence.sql.mappers import (
@@ -25,7 +25,8 @@ class SqlBranchRepository(BranchRepository):
             if branch.id is not None:
                 existing = session.get(BranchModel, branch.id)
             if existing is None and branch.code:
-                stmt = select(BranchModel).where(BranchModel.code == branch.code)
+                cleaned_code = branch.code.strip().upper()
+                stmt = select(BranchModel).where(func.upper(BranchModel.code) == cleaned_code)
                 existing = session.scalars(stmt).first()
 
             if existing is not None:
@@ -46,25 +47,56 @@ class SqlBranchRepository(BranchRepository):
                 branch.id = model.id
                 return branch_to_domain(model)
 
+    def save_all(self, branches: list[Branch]) -> list[Branch]:
+        return [self.save(b) for b in branches]
+
     def get_by_id(self, branch_id: int) -> Branch | None:
         with self.session_factory() as session:
             model = session.get(BranchModel, branch_id)
             return branch_to_domain(model) if model else None
 
     def get_by_code(self, code: str) -> Branch | None:
+        cleaned = code.strip().upper()
         with self.session_factory() as session:
-            stmt = select(BranchModel).where(BranchModel.code == code)
+            stmt = select(BranchModel).where(func.upper(BranchModel.code) == cleaned)
             model = session.scalars(stmt).first()
             return branch_to_domain(model) if model else None
+
+    def get_by_name(self, name: str) -> Branch | None:
+        cleaned = name.strip().lower()
+        with self.session_factory() as session:
+            stmt = select(BranchModel).where(func.lower(BranchModel.name) == cleaned)
+            model = session.scalars(stmt).first()
+            return branch_to_domain(model) if model else None
+
+    def exists_by_id(self, branch_id: int) -> bool:
+        with self.session_factory() as session:
+            stmt = select(func.count(BranchModel.id)).where(BranchModel.id == branch_id)
+            count = session.scalar(stmt) or 0
+            return count > 0
+
+    def exists_by_code(self, code: str) -> bool:
+        cleaned = code.strip().upper()
+        with self.session_factory() as session:
+            stmt = select(func.count(BranchModel.id)).where(func.upper(BranchModel.code) == cleaned)
+            count = session.scalar(stmt) or 0
+            return count > 0
 
     def list_all(self, active_only: bool = False) -> list[Branch]:
         with self.session_factory() as session:
             stmt = select(BranchModel)
             if active_only:
                 stmt = stmt.where(BranchModel.active.is_(True))
-            stmt = stmt.order_by(BranchModel.id.asc())
+            stmt = stmt.order_by(func.lower(BranchModel.name).asc(), BranchModel.id.asc())
             models = session.scalars(stmt).all()
             return [branch_to_domain(m) for m in models]
+
+    def count(self, active_only: bool = False) -> int:
+        with self.session_factory() as session:
+            stmt = select(func.count(BranchModel.id))
+            if active_only:
+                stmt = stmt.where(BranchModel.active.is_(True))
+            return session.scalar(stmt) or 0
 
     def delete(self, branch_id: int) -> bool:
         with self.session_factory() as session:
@@ -74,3 +106,4 @@ class SqlBranchRepository(BranchRepository):
                 session.commit()
                 return True
             return False
+

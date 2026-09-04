@@ -34,15 +34,36 @@ def _make_valid_position(**kwargs) -> Position:
 # Pruebas de inicialización y normalización de Position
 # ============================================================================
 def test_position_valid_creation():
-    pos = _make_valid_position(name="  Supervisor de Turno  ", code="  sup-01  ")
+    pos = _make_valid_position(
+        name="  Supervisor de Turno  ",
+        code="  sup-01  ",
+        description="  Supervisa las operaciones en planta.  ",
+    )
     assert pos.name == "Supervisor de Turno"
     assert pos.code == "SUP-01"
+    assert pos.description == "Supervisa las operaciones en planta."
     assert pos.active is True
     assert pos.id == 1
 
     # Alias en español
     assert pos.nombre == "Supervisor de Turno"
     assert pos.codigo == "SUP-01"
+    assert pos.descripcion == "Supervisa las operaciones en planta."
+    assert pos.activo is True
+
+
+def test_position_minimal_creation():
+    pos = Position(name="  Analista de Calidad  ")
+    assert pos.name == "Analista de Calidad"
+    assert pos.code is None
+    assert pos.description is None
+    assert pos.id is None
+    assert pos.active is True
+
+    # Alias
+    assert pos.nombre == "Analista de Calidad"
+    assert pos.codigo is None
+    assert pos.descripcion is None
     assert pos.activo is True
 
 
@@ -50,16 +71,23 @@ def test_position_spanish_property_setters():
     pos = _make_valid_position()
     pos.nombre = "  Gerente Operativo  "
     pos.codigo = "  ger-01  "
+    pos.descripcion = "  Lidera la operación global.  "
     pos.activo = False
 
     assert pos.name == "Gerente Operativo"
     assert pos.code == "GER-01"
+    assert pos.description == "Lidera la operación global."
     assert pos.active is False
 
 
 # ============================================================================
 # Pruebas de validación e invariantes
 # ============================================================================
+@pytest.mark.parametrize("invalid_desc", ["D" * 501])
+def test_position_invalid_description(invalid_desc):
+    with pytest.raises(ValidationError):
+        _make_valid_position(description=invalid_desc)
+
 @pytest.mark.parametrize("invalid_id", [0, -1, "1", True, False])
 def test_position_invalid_id(invalid_id):
     with pytest.raises(ValidationError):

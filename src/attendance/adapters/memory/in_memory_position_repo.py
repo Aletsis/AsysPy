@@ -30,18 +30,41 @@ class InMemoryPositionRepository(PositionRepository):
         if position.id is None:
             position.id = self._next_id
             self._next_id += 1
+        else:
+            self._next_id = max(self._next_id, position.id + 1)
 
         self._positions[position.id] = position
         return position
+
+    def save_all(self, positions: list[Position]) -> list[Position]:
+        return [self.save(p) for p in positions]
 
     def get_by_id(self, position_id: int) -> Position | None:
         return self._positions.get(position_id)
 
     def get_by_code(self, code: str) -> Position | None:
+        cleaned = code.strip().upper()
+        if not cleaned:
+            return None
         for p in self._positions.values():
-            if p.code == code:
+            if p.code == cleaned:
                 return p
         return None
+
+    def get_by_name(self, name: str) -> Position | None:
+        cleaned = name.strip().lower()
+        if not cleaned:
+            return None
+        for p in self._positions.values():
+            if p.name.strip().lower() == cleaned:
+                return p
+        return None
+
+    def exists_by_id(self, position_id: int) -> bool:
+        return position_id in self._positions
+
+    def exists_by_code(self, code: str) -> bool:
+        return self.get_by_code(code) is not None
 
     def list_all(
         self, department_id: int | None = None, active_only: bool = False
@@ -55,7 +78,12 @@ class InMemoryPositionRepository(PositionRepository):
                 result = []
         if active_only:
             result = [p for p in result if p.active]
-        return sorted(result, key=lambda p: (p.id or 0))
+        return sorted(result, key=lambda p: (p.name.lower(), p.id or 0))
+
+    def count(
+        self, department_id: int | None = None, active_only: bool = False
+    ) -> int:
+        return len(self.list_all(department_id=department_id, active_only=active_only))
 
     def delete(self, position_id: int) -> bool:
         if position_id in self._positions:
@@ -81,3 +109,17 @@ class InMemoryPositionRepository(PositionRepository):
                         continue
                     result.append(dept)
         return sorted(result, key=lambda d: (d.id or 0))
+
+    def assign_department(self, position_id: int, department_id: int) -> None:
+        if self.department_repo and hasattr(self.department_repo, "_positions_by_dept"):
+            if department_id not in self.department_repo._positions_by_dept:
+                self.department_repo._positions_by_dept[department_id] = set()
+            self.department_repo._positions_by_dept[department_id].add(position_id)
+
+    def remove_department(self, position_id: int, department_id: int) -> bool:
+        if self.department_repo and hasattr(self.department_repo, "_positions_by_dept"):
+            if department_id in self.department_repo._positions_by_dept:
+                if position_id in self.department_repo._positions_by_dept[department_id]:
+                    self.department_repo._positions_by_dept[department_id].remove(position_id)
+                    return True
+        return False

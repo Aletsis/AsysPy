@@ -1,6 +1,6 @@
-"""Repositorio SQL para Position usando SQLAlchemy."""
+from collections.abc import Sequence
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from attendance.adapters.persistence.sql.mappers import (
@@ -43,11 +43,15 @@ class SqlPositionRepository(PositionRepository):
             else:
                 model.name = position.name
                 model.code = position.code
+                model.description = position.description
                 model.active = position.active
                 session.commit()
                 session.refresh(model)
 
             return position_to_domain(model)
+
+    def save_all(self, positions: list[Position]) -> list[Position]:
+        return [self.save(p) for p in positions]
 
     def get_by_id(self, position_id: int) -> Position | None:
         with self._session_factory() as session:
@@ -57,12 +61,39 @@ class SqlPositionRepository(PositionRepository):
             return position_to_domain(model)
 
     def get_by_code(self, code: str) -> Position | None:
+        cleaned = code.strip().upper()
+        if not cleaned:
+            return None
         with self._session_factory() as session:
-            stmt = select(PositionModel).where(PositionModel.code == code)
+            stmt = select(PositionModel).where(PositionModel.code == cleaned)
             model = session.scalar(stmt)
             if not model:
                 return None
             return position_to_domain(model)
+
+    def get_by_name(self, name: str) -> Position | None:
+        cleaned = name.strip()
+        if not cleaned:
+            return None
+        with self._session_factory() as session:
+            stmt = select(PositionModel).where(func.lower(PositionModel.name) == cleaned.lower())
+            model = session.scalar(stmt)
+            if not model:
+                return None
+            return position_to_domain(model)
+
+    def exists_by_id(self, position_id: int) -> bool:
+        with self._session_factory() as session:
+            stmt = select(PositionModel.id).where(PositionModel.id == position_id).limit(1)
+            return session.scalar(stmt) is not None
+
+    def exists_by_code(self, code: str) -> bool:
+        cleaned = code.strip().upper()
+        if not cleaned:
+            return False
+        with self._session_factory() as session:
+            stmt = select(PositionModel.id).where(PositionModel.code == cleaned).limit(1)
+            return session.scalar(stmt) is not None
 
     def list_all(
         self, department_id: int | None = None, active_only: bool = False
@@ -82,9 +113,30 @@ class SqlPositionRepository(PositionRepository):
 
             if active_only:
                 stmt = stmt.where(PositionModel.active.is_(True))
-            stmt = stmt.order_by(PositionModel.id)
-            models = session.scalars(stmt).all()
+            stmt = stmt.order_by(PositionModel.name.asc(), PositionModel.id.asc())
+            models: Sequence[PositionModel] = session.scalars(stmt).all()
             return [position_to_domain(m) for m in models]
+
+    def count(
+        self, department_id: int | None = None, active_only: bool = False
+    ) -> int:
+        with self._session_factory() as session:
+            if department_id is not None:
+                stmt = (
+                    select(func.count(PositionModel.id))
+                    .join(
+                        DepartmentPositionModel,
+                        PositionModel.id == DepartmentPositionModel.position_id,
+                    )
+                    .where(DepartmentPositionModel.department_id == department_id)
+                )
+            else:
+                stmt = select(func.count(PositionModel.id))
+
+            if active_only:
+                stmt = stmt.where(PositionModel.active.is_(True))
+            total = session.scalar(stmt)
+            return total if total is not None else 0
 
     def delete(self, position_id: int) -> bool:
         with self._session_factory() as session:
@@ -118,3 +170,30 @@ class SqlPositionRepository(PositionRepository):
             stmt = stmt.order_by(DepartmentModel.id)
             models = session.scalars(stmt).all()
             return [department_to_domain(m) for m in models]
+
+    def assign_department(self, position_id: int, department_id: int) -> None:
+        with self._session_factory() as session:
+            existing = session.scalar(
+                select(DepartmentPositionModel).where(
+                    DepartmentPositionModel.position_id == position_id,
+                    DepartmentPositionModel.department_id == department_id,
+                )
+            )
+            if not existing:
+                session.add(
+                    DepartmentPositionModel(
+                        position_id=position_id, department_id=department_id
+                    )
+                )
+                session.commit()
+
+    def remove_department(self, position_id: int, department_id: int) -> bool:
+        with self._session_factory() as session:
+            result = session.execute(
+                delete(DepartmentPositionModel).where(
+                    DepartmentPositionModel.position_id == position_id,
+                    DepartmentPositionModel.department_id == department_id,
+                )
+            )
+            session.commit()
+            return bool(getattr(result, "rowcount", 0) > 0)

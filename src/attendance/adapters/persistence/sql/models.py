@@ -54,11 +54,12 @@ class EmployeeModel(Base):
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     paternal_last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     maternal_last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    hire_date: Mapped[date] = mapped_column(Date, nullable=False)
+    hire_date: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
     sex: Mapped[str] = mapped_column(String(10), nullable=False)
-    department_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    position: Mapped[str] = mapped_column(String(100), nullable=False)
-    home_branch_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    department_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1, index=True)
+    position_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    position: Mapped[str] = mapped_column(String(100), nullable=False, default="General")
+    home_branch_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1, index=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
@@ -278,7 +279,8 @@ class PositionModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False, index=True)
+    code: Mapped[str | None] = mapped_column(String(30), unique=True, nullable=True, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
 

@@ -1,6 +1,7 @@
 """Pruebas unitarias para las validaciones e invariantes de la entidad Employee y Fingerprint."""
 
 from datetime import date
+
 import pytest
 
 from attendance.domain.common.exceptions import ValidationError
@@ -92,17 +93,101 @@ def test_employee_maternal_last_name_optional_and_normalized():
         _make_valid_employee(maternal_last_name="M" * 101)
 
 
+def test_employee_minimal_mandatory_creation():
+    emp = Employee(
+        pin="MIN001",
+        first_name="Pedro",
+        paternal_last_name="García",
+        sex=Sex.MALE,
+    )
+    assert emp.pin == "MIN001"
+    assert emp.first_name == "Pedro"
+    assert emp.paternal_last_name == "García"
+    assert emp.sex == Sex.MALE
+    assert emp.hire_date == date.today()
+    assert emp.id is None
+    assert emp.maternal_last_name is None
+    assert emp.department_id == 1
+    assert emp.home_branch_id == 1
+    assert emp.position == "General"
+    assert emp.position_id is None
+    assert emp.active is True
+    assert emp.email is None
+    assert emp.fingerprints == []
+
+
+def test_employee_hire_date_defaults_to_today_when_none():
+    emp = _make_valid_employee(hire_date=None)
+    assert emp.hire_date == date.today()
+    assert emp.fecha_ingreso == date.today()
+
+
+def test_employee_sex_mandatory():
+    with pytest.raises(ValidationError, match="El sexo del empleado es obligatorio"):
+        _make_valid_employee(sex=None)
+
+    with pytest.raises(ValidationError, match="El sexo del empleado es inválido"):
+        _make_valid_employee(sex="desconocido")
+
+
+def test_employee_position_id_optional_and_validations():
+    # Opcional (None por defecto)
+    emp = _make_valid_employee(position_id=None)
+    assert emp.position_id is None
+    assert emp.puesto_id is None
+
+    # Asignación válida
+    emp.position_id = 5
+    assert emp.position_id == 5
+    assert emp.puesto_id == 5
+
+    # Modificación vía alias
+    emp.puesto_id = 8
+    assert emp.position_id == 8
+
+    # Valores inválidos
+    for invalid in [0, -1, "5", False]:
+        with pytest.raises(ValidationError):
+            _make_valid_employee(position_id=invalid)
+
+
+def test_employee_position_string_optional_defaults_to_general():
+    emp = _make_valid_employee(position=None)
+    assert emp.position == "General"
+    assert emp.puesto == "General"
+
+    emp.puesto = "Supervisor de Calidad"
+    assert emp.position == "Supervisor de Calidad"
+    assert emp.puesto == "Supervisor de Calidad"
+
+
+def test_employee_department_and_branch_aliases():
+    emp = _make_valid_employee()
+    emp.departamento_id = 3
+    emp.sucursal_base_id = 7
+    assert emp.department_id == 3
+    assert emp.home_branch_id == 7
+    assert emp.departamento_id == 3
+    assert emp.sucursal_base_id == 7
+
+
+def test_employee_fecha_ingreso_and_sexo_aliases():
+    emp = _make_valid_employee()
+    emp.fecha_ingreso = date(2024, 6, 1)
+    assert emp.hire_date == date(2024, 6, 1)
+
+    emp.sexo = "female"
+    assert emp.sex == Sex.FEMALE
+    emp.sexo = Sex.MALE
+    assert emp.sex == Sex.MALE
+
+    with pytest.raises(ValidationError):
+        emp.sexo = "invalido"
+
+
 def test_employee_invalid_hire_date():
     with pytest.raises(ValidationError):
         _make_valid_employee(hire_date="2023-01-01")
-
-
-def test_employee_sex_string_auto_conversion():
-    emp = _make_valid_employee(sex="female")
-    assert emp.sex == Sex.FEMALE
-
-    with pytest.raises(ValidationError):
-        _make_valid_employee(sex="otro")
 
 
 @pytest.mark.parametrize("invalid_dept", [0, -1, "1", False])
@@ -359,6 +444,7 @@ def test_employee_fingerprints_maximum_10():
 def test_sql_employee_repository_with_all_new_fields_and_fingerprints():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from attendance.adapters.persistence.sql.models import Base
     from attendance.adapters.persistence.sql.repositories.employee_repo import SqlEmployeeRepository
 
